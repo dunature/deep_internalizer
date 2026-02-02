@@ -1,0 +1,129 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-primary);
+}
+
+/* Empty & Complete states */
+.empty,
+.complete {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-8);
+}
+
+.emptyIcon,
+.completeIcon {
+    font-size: 4rem;
+    margin-bottom: var(--space-4);
+}
+
+.empty h2,
+.complete h2 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-2);
+}
+
+.empty p,
+.complete p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+/* Stats Grid */
+.statsGrid {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.statCard {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.statNumber {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-accent-primary);
+}
+
+.statLabel {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-6);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.progress {
+    flex: 1;
+    max-width: 200px;
+    margin: 0 var(--space-4);
+}
+
+.progressText {
+    display: block;
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+}
+
+.progressBar {
+    height: 4px;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--color-accent-gradient);
+    transition: width 0.3s ease;
+}
+
+.remaining {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+/* Main */
+.main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Footer */
+.footer {
+    padding: var(--space-4) var(--space-6);
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.sessionStats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}

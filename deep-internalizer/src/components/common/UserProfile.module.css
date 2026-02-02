@@ -1,0 +1,94 @@
+.container {
+    min-height: 100vh;
+    padding: var(--space-6);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.header h1 {
+    font-size: var(--text-2xl);
+}
+
+/* Stats Section */
+.statsSection {
+    margin-bottom: var(--space-8);
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+}
+
+.statCard {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.statCard:hover {
+    border-color: var(--border-color-hover);
+    transform: translateY(-2px);
+}
+
+.statIcon {
+    font-size: 2rem;
+    margin-bottom: var(--space-2);
+}
+
+.statValue {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.statLabel {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-1);
+}
+
+/* Heatmap Section */
+.heatmapSection {
+    margin-bottom: var(--space-8);
+}
+
+/* Data Management Section */
+.dataSection {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+}
+
+.dataSection h2 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-5);
+}
+
+.dataActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.dangerBtn {
+    color: var(--color-error);
+}
+
+.dangerBtn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}

@@ -1,0 +1,40 @@
+.banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    z-index: var(--z-toast);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.offline {
+    background: var(--color-warning);
+    color: #000;
+}
+
+.online {
+    background: var(--color-success);
+    color: #fff;
+}
+
+.icon {
+    font-size: 1rem;
+}

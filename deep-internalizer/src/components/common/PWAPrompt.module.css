@@ -1,0 +1,59 @@
+.container {
+    position: fixed;
+    bottom: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-toast);
+    animation: slideUp 0.3s ease;
+    max-width: 90%;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.icon {
+    font-size: 1.5rem;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+}
+
+.text strong {
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+}
+
+.text span {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-2);
+}

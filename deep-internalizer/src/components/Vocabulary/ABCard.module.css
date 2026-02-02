@@ -1,0 +1,170 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-6);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Card Indicator */
+.cardIndicator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.dot {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.dot.active {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--color-accent-primary);
+}
+
+.swipeHint {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Card Stack */
+.cardStack {
+    position: relative;
+    height: 300px;
+    cursor: grab;
+    user-select: none;
+}
+
+.cardStack:active {
+    cursor: grabbing;
+}
+
+/* Cards */
+.card {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.card.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cardA {
+    background: linear-gradient(135deg,
+            rgba(99, 102, 241, 0.1) 0%,
+            rgba(168, 85, 247, 0.05) 100%);
+    border-color: var(--color-accent-primary);
+}
+
+.cardB {
+    background: var(--color-bg-secondary);
+}
+
+.cardLabel {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    background: var(--color-bg-elevated);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+}
+
+.contextText {
+    font-size: var(--text-lg);
+    line-height: 1.8;
+    color: var(--color-text-primary);
+    max-width: 400px;
+}
+
+/* Card B specific */
+.wordReveal {
+    margin-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.blankWord {
+    font-size: var(--text-xl);
+    color: var(--color-accent-primary);
+    font-family: var(--font-mono);
+}
+
+.wordHint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+/* Card A specific */
+.wordInfo {
+    margin-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.wordText {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.phonetic {
+    font-size: var(--text-sm);
+    color: var(--color-accent-primary);
+    font-family: var(--font-mono);
+}
+
+.highlight {
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
+    color: var(--color-text-primary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+}
+
+.keepBtn,
+.archiveBtn {
+    flex: 1;
+    max-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+}
+
+.btnIcon {
+    font-size: 1.2em;
+}
+
+.keepBtn:hover {
+    border-color: var(--color-warning);
+}
+
+.archiveBtn:hover {
+    box-shadow: var(--shadow-glow);
+}

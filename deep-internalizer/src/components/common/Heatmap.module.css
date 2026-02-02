@@ -1,0 +1,157 @@
+.container {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.header h3 {
+    font-size: var(--text-lg);
+    color: var(--color-text-primary);
+}
+
+.stats {
+    display: flex;
+    gap: var(--space-6);
+}
+
+.stat {
+    text-align: center;
+}
+
+.statValue {
+    display: block;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-accent-primary);
+}
+
+.statLabel {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+/* Heatmap Wrapper */
+.heatmapWrapper {
+    position: relative;
+    overflow-x: auto;
+    padding-top: var(--space-6);
+    padding-left: var(--space-8);
+}
+
+/* Month Labels */
+.monthLabels {
+    position: absolute;
+    top: 0;
+    left: var(--space-8);
+    right: 0;
+    height: var(--space-5);
+}
+
+.monthLabel {
+    position: absolute;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    transform: translateX(-50%);
+}
+
+/* Day Labels */
+.dayLabels {
+    position: absolute;
+    left: 0;
+    top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.dayLabels span {
+    height: 12px;
+    line-height: 12px;
+}
+
+/* Grid */
+.grid {
+    display: flex;
+    gap: 3px;
+}
+
+.week {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Cells */
+.cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.cell:hover {
+    transform: scale(1.3);
+}
+
+.emptyCell {
+    width: 12px;
+    height: 12px;
+}
+
+/* Intensity Levels */
+.level0 {
+    background: var(--color-bg-elevated);
+}
+
+.level1 {
+    background: rgba(99, 102, 241, 0.3);
+}
+
+.level2 {
+    background: rgba(99, 102, 241, 0.5);
+}
+
+.level3 {
+    background: rgba(99, 102, 241, 0.7);
+}
+
+.level4 {
+    background: var(--color-accent-primary);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
+/* Legend */
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+    margin-top: var(--space-4);
+}
+
+.legendLabel {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin: 0 var(--space-2);
+}
+
+.legend .cell {
+    cursor: default;
+}
+
+.legend .cell:hover {
+    transform: none;
+}
