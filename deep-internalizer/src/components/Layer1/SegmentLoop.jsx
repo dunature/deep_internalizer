@@ -1,10 +1,12 @@
 /**
  * Layer 1: Segment Loop Component
  * The 4-step reading loop for each chunk
+ * Now with background prefetching support
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './SegmentLoop.module.css';
 import { useTTS } from '../../hooks/useTTS';
+import { prefetchService } from '../../services/prefetchService';
 import VocabularyCard from './VocabularyCard';
 import SentenceCard from './SentenceCard';
 
@@ -17,14 +19,55 @@ const STEPS = [
 
 export default function SegmentLoop({
     chunk,
-    words = [],
+    words: externalWords = [],
     currentStep,
     onStepComplete,
     onWordAction,
     onBack
 }) {
     const [isBilingual, setIsBilingual] = useState(false);
+    const [prefetchedWords, setPrefetchedWords] = useState([]);
+    const [isLoadingWords, setIsLoadingWords] = useState(false);
+    const abortRef = useRef(null);
 
+    // Use external words if provided, otherwise use prefetched
+    const words = externalWords.length > 0 ? externalWords : prefetchedWords;
+
+    // Prefetch keywords when entering Step 1
+    useEffect(() => {
+        if (!chunk?.id || !chunk?.originalText) return;
+
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        // Start prefetch in background
+        setIsLoadingWords(true);
+        prefetchService.prefetchKeywords(chunk.id, chunk.originalText, controller.signal)
+            .then(keywords => {
+                if (!controller.signal.aborted) {
+                    setPrefetchedWords(keywords);
+                    setIsLoadingWords(false);
+                }
+            })
+            .catch(e => {
+                if (e.name !== 'AbortError') {
+                    console.error('[SegmentLoop] Prefetch failed:', e);
+                    setIsLoadingWords(false);
+                }
+            });
+
+        return () => {
+            controller.abort();
+            prefetchService.cancelPrefetch(chunk.id);
+        };
+    }, [chunk?.id, chunk?.originalText]);
+
+    // Prefetch TTS when entering Step 2 (Vocabulary Build)
+    useEffect(() => {
+        if (currentStep === 2 && words.length > 0) {
+            prefetchService.prefetchTTSForWords(words);
+        }
+    }, [currentStep, words]);
 
     if (!chunk) {
         return (
@@ -42,6 +85,7 @@ export default function SegmentLoop({
                 return (
                     <Step2VocabularyBuild
                         words={words}
+                        isLoading={isLoadingWords}
                         onWordAction={onWordAction}
                         onComplete={() => onStepComplete(2)}
                     />
@@ -130,11 +174,7 @@ function Step1MacroContext({ chunk, onComplete }) {
 /**
  * Step 2: Vocabulary Build - Key words with original context
  */
-
-/**
- * Step 2: Vocabulary Build - Key words with original context
- */
-function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
+function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, onComplete }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [showPeek, setShowPeek] = useState(false);
     const { speak, isPlaying, isLoading } = useTTS();
@@ -166,6 +206,23 @@ function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
     // Peek Origin handlers
     const handlePeekStart = () => setShowPeek(true);
     const handlePeekEnd = () => setShowPeek(false);
+
+    // Show loading state while keywords are being fetched
+    if (isLoadingWords) {
+        return (
+            <div className={styles.stepContent}>
+                <div className={styles.stepHeader}>
+                    <span className={styles.stepLabel}>Step 2</span>
+                    <h3>Vocabulary Build</h3>
+                    <p className={styles.stepDesc}>Loading keywords...</p>
+                </div>
+                <div className={styles.loadingSpinner}>
+                    <div className="spinner"></div>
+                    <p>Extracting key vocabulary from this chunk...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!hasWords) {
         return (

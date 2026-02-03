@@ -24,8 +24,8 @@ export default function VocabularyCard({
     const handlePlaySyllable = async (e, slice, index) => {
         e.stopPropagation();
         setActiveSyllable(index);
-        // Play at slower speed for better articulation detail
-        await speak(slice.text, { speed: 0.7 });
+        // Use speakSyllable for cached syllable playback at slower speed
+        await speak(slice.text, { type: 'syllable', speed: 0.7 });
         setActiveSyllable(null);
     };
 

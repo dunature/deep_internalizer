@@ -141,135 +141,133 @@ export default function ImportModal({ isOpen, onClose, onImport, isLoading, proc
                     </button>
                 </header>
 
-            </header>
-
-            {isLoading ? (
-                <div className={styles.thinkingContainer}>
-                    <ThinkingProcess logs={processingLogs} currentStep={processingStep} />
-                </div>
-            ) : (
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.field}>
-                        <label>Document Source</label>
-                        <div
-                            className={`${styles.dropZone} ${isDragging ? styles.dragging : ''} ${selectedFile ? styles.hasFile : ''}`}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept=".pdf,.docx,.txt"
-                                className={styles.hiddenInput}
-                            />
-                            {isParsing ? (
-                                <div className={styles.parsingState}>
-                                    <span className="spinner" />
-                                    <p>Extracting text from file...</p>
-                                </div>
-                            ) : selectedFile ? (
-                                <div className={styles.fileInfo}>
-                                    <span className={styles.fileIcon}>📄</span>
-                                    <div className={styles.fileDetails}>
-                                        <span className={styles.fileName}>{selectedFile.name}</span>
-                                        <span className={styles.fileSize}>{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                {isLoading ? (
+                    <div className={styles.thinkingContainer}>
+                        <ThinkingProcess logs={processingLogs} currentStep={processingStep} />
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className={styles.form}>
+                        <div className={styles.field}>
+                            <label>Document Source</label>
+                            <div
+                                className={`${styles.dropZone} ${isDragging ? styles.dragging : ''} ${selectedFile ? styles.hasFile : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept=".pdf,.docx,.txt"
+                                    className={styles.hiddenInput}
+                                />
+                                {isParsing ? (
+                                    <div className={styles.parsingState}>
+                                        <span className="spinner" />
+                                        <p>Extracting text from file...</p>
                                     </div>
+                                ) : selectedFile ? (
+                                    <div className={styles.fileInfo}>
+                                        <span className={styles.fileIcon}>📄</span>
+                                        <div className={styles.fileDetails}>
+                                            <span className={styles.fileName}>{selectedFile.name}</span>
+                                            <span className={styles.fileSize}>{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className={styles.clearBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                clearSelectedFile();
+                                            }}
+                                            title="Clear file"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className={styles.dropPrompt}>
+                                        <span className={styles.uploadIcon}>📁</span>
+                                        <p>Click or drag PDF, DOCX, or TXT here</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={styles.field}>
+                            <label htmlFor="title">Document Title</label>
+                            <input
+                                id="title"
+                                type="text"
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                placeholder="e.g., The Art of Deep Work"
+                                className={styles.input}
+                                disabled={isLoading || isParsing}
+                            />
+                        </div>
+
+                        <div className={styles.field}>
+                            <div className={styles.labelRow}>
+                                <label htmlFor="content">Content Preview</label>
+                                {content && (
                                     <button
                                         type="button"
-                                        className={styles.clearBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            clearSelectedFile();
-                                        }}
-                                        title="Clear file"
+                                        onClick={handleCleanText}
+                                        className={styles.textActionBtn}
+                                        title="Fix broken lines (keep paragraphs)"
                                     >
-                                        ✕
+                                        ✨ Clean Text
                                     </button>
-                                </div>
-                            ) : (
-                                <div className={styles.dropPrompt}>
-                                    <span className={styles.uploadIcon}>📁</span>
-                                    <p>Click or drag PDF, DOCX, or TXT here</p>
-                                </div>
-                            )}
+                                )}
+                            </div>
+                            <textarea
+                                id="content"
+                                value={content}
+                                onChange={e => setContent(e.target.value)}
+                                placeholder="Paste your English text here or use the upload above..."
+                                className={styles.textarea}
+                                rows={selectedFile ? 6 : 10}
+                                disabled={isLoading || isParsing}
+                            />
+                            <span className={styles.wordCount}>
+                                {content.split(/\s+/).filter(w => w).length} words
+                            </span>
                         </div>
-                    </div>
 
-                    <div className={styles.field}>
-                        <label htmlFor="title">Document Title</label>
-                        <input
-                            id="title"
-                            type="text"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder="e.g., The Art of Deep Work"
-                            className={styles.input}
-                            disabled={isLoading || isParsing}
-                        />
-                    </div>
+                        {error && (
+                            <div className={styles.error}>{error}</div>
+                        )}
 
-                    <div className={styles.field}>
-                        <div className={styles.labelRow}>
-                            <label htmlFor="content">Content Preview</label>
-                            {content && (
-                                <button
-                                    type="button"
-                                    onClick={handleCleanText}
-                                    className={styles.textActionBtn}
-                                    title="Fix broken lines (keep paragraphs)"
-                                >
-                                    ✨ Clean Text
-                                </button>
-                            )}
+                        <div className={styles.actions}>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={handleClose}
+                                disabled={isLoading || isParsing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={isLoading || isParsing || !content.trim()}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <span className="spinner" />
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    'Import & Analyze'
+                                )}
+                            </button>
                         </div>
-                        <textarea
-                            id="content"
-                            value={content}
-                            onChange={e => setContent(e.target.value)}
-                            placeholder="Paste your English text here or use the upload above..."
-                            className={styles.textarea}
-                            rows={selectedFile ? 6 : 10}
-                            disabled={isLoading || isParsing}
-                        />
-                        <span className={styles.wordCount}>
-                            {content.split(/\s+/).filter(w => w).length} words
-                        </span>
-                    </div>
-
-                    {error && (
-                        <div className={styles.error}>{error}</div>
-                    )}
-
-                    <div className={styles.actions}>
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={handleClose}
-                            disabled={isLoading || isParsing}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={isLoading || isParsing || !content.trim()}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <span className="spinner" />
-                                    Analyzing...
-                                </>
-                            ) : (
-                                'Import & Analyze'
-                            )}
-                        </button>
-                    </div>
-                </form>
-            )}
+                    </form>
+                )}
+            </div>
         </div>
-        </div >
     );
 }

@@ -1,3 +1,7 @@
+/**
+ * useTTS Hook - React hook for TTS with caching support
+ * Uses the new ttsService with word/syllable caching
+ */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ttsService } from '../services/ttsService';
 
@@ -16,21 +20,41 @@ export function useTTS() {
         };
     }, []);
 
+    /**
+     * Speak text - automatically chooses caching strategy
+     * @param {string} text - Text to speak
+     * @param {object} options - { speed, voice, type: 'word'|'syllable'|'sentence' }
+     */
     const speak = useCallback(async (text, options = {}) => {
         if (!text) return;
-        const { speed = 1.0, voice = 'default' } = options;
+        const { speed = 1.0, voice = 'default', type = 'auto' } = options;
 
         try {
             setIsLoading(true);
             setError(null);
 
-            // Generate audio URL
-            const audioUrl = await ttsService.generateAudio(text, voice);
+            let audioUrl;
+
+            // Determine type automatically if not specified
+            const textType = type === 'auto'
+                ? (text.includes(' ') ? 'sentence' : (text.length <= 5 ? 'syllable' : 'word'))
+                : type;
+
+            switch (textType) {
+                case 'syllable':
+                    audioUrl = await ttsService.speakSyllable(text, speed);
+                    break;
+                case 'sentence':
+                    audioUrl = await ttsService.speakSentence(text, voice);
+                    break;
+                case 'word':
+                default:
+                    audioUrl = await ttsService.speakWord(text, voice);
+                    break;
+            }
 
             const audio = audioRef.current;
             audio.src = audioUrl;
-
-            // Apply playback speed
             audio.playbackRate = speed;
 
             // Setup listeners
@@ -52,6 +76,27 @@ export function useTTS() {
         }
     }, []);
 
+    /**
+     * Speak a word (with caching)
+     */
+    const speakWord = useCallback(async (word, options = {}) => {
+        return speak(word, { ...options, type: 'word' });
+    }, [speak]);
+
+    /**
+     * Speak a syllable (cached for common syllables)
+     */
+    const speakSyllable = useCallback(async (syllable, options = {}) => {
+        return speak(syllable, { ...options, type: 'syllable', speed: options.speed || 0.7 });
+    }, [speak]);
+
+    /**
+     * Speak a sentence (no caching)
+     */
+    const speakSentence = useCallback(async (sentence, options = {}) => {
+        return speak(sentence, { ...options, type: 'sentence' });
+    }, [speak]);
+
     const stop = useCallback(() => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -60,6 +105,9 @@ export function useTTS() {
 
     return {
         speak,
+        speakWord,
+        speakSyllable,
+        speakSentence,
         stop,
         isPlaying,
         isLoading,

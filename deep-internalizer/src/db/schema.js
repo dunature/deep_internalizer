@@ -8,7 +8,7 @@ import Dexie from 'dexie';
 export const db = new Dexie('DeepInternalizer');
 
 // Define schema
-db.version(2).stores({
+db.version(3).stores({
   // Documents: imported articles/texts
   documents: 'id, title, importedAt, lastAccessedAt',
 
@@ -25,7 +25,17 @@ db.version(2).stores({
   readingSessions: 'docId',
 
   // User stats: daily progress for heatmap
-  userStats: 'date'
+  userStats: 'date',
+
+  // === CACHING TABLES ===
+  // Word audio cache (TTS)
+  wordAudio: 'word, createdAt',
+
+  // Syllable audio cache (common syllables only)
+  syllableAudio: 'syllable, createdAt',
+
+  // LLM response cache for keywords
+  chunkKeywords: 'chunkId'
 });
 
 // Enums

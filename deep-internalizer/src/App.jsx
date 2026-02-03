@@ -148,14 +148,19 @@ function App() {
     addLog('Initializing import sequence...', 'active');
 
     try {
-      // Generate core thesis
-      setProcessingStep('SYNTHESIS');
-      addLog('Synthesizing Core Thesis from raw text...');
-      const coreThesis = await generateCoreThesis(content, undefined, signal);
+      // Parallel LLM processing: thesis + chunking run simultaneously
+      setProcessingStep('PARALLEL_PROCESSING');
+      addLog('Running parallel AI analysis (thesis + chunking)...');
+
+      const [coreThesis, semanticChunks] = await Promise.all([
+        generateCoreThesis(content, undefined, signal),
+        chunkDocument(content, undefined, signal)
+      ]);
 
       if (operationId !== asyncOperationIdRef.current) return;
 
-      addLog('thesis generated: ' + coreThesis.substring(0, 30) + '...', 'done');
+      addLog(`Thesis: "${coreThesis.substring(0, 30)}..."`, 'done');
+      addLog(`Created ${semanticChunks.length} semantic chunks`, 'done');
 
       // Create document
       setProcessingStep('PERSISTENCE');
@@ -163,14 +168,6 @@ function App() {
       const docId = await createDocument(title, content, coreThesis);
 
       if (operationId !== asyncOperationIdRef.current) return;
-
-      // Chunk the document
-      setProcessingStep('CHUNKING');
-      addLog('Deconstructing into semantic shards...');
-      const semanticChunks = await chunkDocument(content, undefined, signal);
-
-      if (operationId !== asyncOperationIdRef.current) return;
-      addLog(`Created ${semanticChunks.length} semantic chunks`, 'done');
 
       // Save chunks
       setProcessingStep('SAVING');
@@ -242,75 +239,27 @@ function App() {
     }
   };
 
-  // Handle chunk selection - enter Layer 1
+  // Handle chunk selection - enter Layer 1 IMMEDIATELY
   const handleChunkSelect = async (index) => {
     const chunk = chunks[index];
     if (!chunk) return;
 
     // Cancel any in-flight requests from previous operations
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    cancelPendingOperations();
 
-    // Create new AbortController for this operation
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const { signal } = controller;
-
-    // Increment operation ID to invalidate any previous pending async calls
-    const operationId = ++asyncOperationIdRef.current;
-
+    // Enter Layer1 immediately (no blocking LLM call)
     setCurrentChunk(index);
-    setLoading(true);
+    setCurrentStep(1);
+    setCurrentView(VIEW.LAYER1);
+    setChunkWords([]); // Will be populated by SegmentLoop via prefetch
 
-    try {
-      // Extract keywords for this chunk (with cancellation support)
-      // Now returns keywords WITH newContext already populated by the consolidated prompt
-      const wordsWithContext = await extractKeywords(chunk.originalText, undefined, signal);
-
-      // Check if this operation is still valid (user hasn't navigated away)
-      if (operationId !== asyncOperationIdRef.current) {
-        console.log('[AsyncGuard] Stale operation detected, aborting state update.');
-        return;
-      }
-
-      // No need for separate context generation anymore
-
-
-      // Final validity check before committing to view change
-      if (operationId !== asyncOperationIdRef.current) {
-        console.log('[AsyncGuard] Stale operation detected after context generation, aborting.');
-        return;
-      }
-
-      setChunkWords(wordsWithContext);
-      setCurrentStep(1);
-      setCurrentView(VIEW.LAYER1);
-
-      // Save session
-      await saveReadingSession({
-        docId: currentDocId,
-        currentChunkIndex: index,
-        currentStep: 1,
-        subStepProgress: 0
-      });
-    } catch (error) {
-      // Ignore AbortError - it's expected when user navigates away
-      if (error.name === 'AbortError') {
-        console.log('[AbortController] Request cancelled by user navigation');
-        return;
-      }
-      // Only show error if this operation is still current
-      if (operationId === asyncOperationIdRef.current) {
-        console.error('Failed to load chunk:', error);
-        alert(`Failed to extract keywords: ${error.message}`);
-      }
-    } finally {
-      // Only reset loading if this is still the current operation
-      if (operationId === asyncOperationIdRef.current) {
-        setLoading(false);
-      }
-    }
+    // Save session
+    await saveReadingSession({
+      docId: currentDocId,
+      currentChunkIndex: index,
+      currentStep: 1,
+      subStepProgress: 0
+    });
   };
 
   // Handle going back to Layer 0
