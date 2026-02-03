@@ -214,11 +214,21 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                 <div className={styles.stepHeader}>
                     <span className={styles.stepLabel}>Step 2</span>
                     <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>Loading keywords...</p>
+                    <p className={styles.stepDesc}>AI is analyzing text...</p>
                 </div>
+
+                {/* Skeleton Loading Cards */}
+                <div className={styles.skeletonContainer}>
+                    <div className={styles.skeletonCard}>
+                        <div className={styles.skeletonWord}></div>
+                        <div className={styles.skeletonPhonetic}></div>
+                        <div className={styles.skeletonDefinition}></div>
+                    </div>
+                </div>
+
                 <div className={styles.loadingSpinner}>
                     <div className="spinner"></div>
-                    <p>Extracting key vocabulary from this chunk...</p>
+                    <p>🔍 Extracting key vocabulary<span className={styles.loadingDots}></span></p>
                 </div>
             </div>
         );
