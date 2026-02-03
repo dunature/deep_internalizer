@@ -140,7 +140,7 @@ export default function SegmentLoop({
 /**
  * Step 1: Macro Context - Summary overview
  */
-function Step1MacroContext({ chunk, onComplete }) {
+function Step1MacroContext({ chunk, isBilingual, onComplete }) {
     return (
         <div className={styles.stepContent}>
             <div className={styles.stepHeader}>
