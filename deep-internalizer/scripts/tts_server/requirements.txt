@@ -1,0 +1,12 @@
+torch
+transformers
+accelerate
+fastapi
+uvicorn
+python-multipart
+soundfile
+scipy
+# Assuming standard transformers is enough for now, 
+# as specific qwen-tts package might be bleeding edge/github only.
+# adding git+https link or user can install manually if needed.
+# We will use huggingface transformers if model is supported there.

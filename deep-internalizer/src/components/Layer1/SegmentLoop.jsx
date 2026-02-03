@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import styles from './SegmentLoop.module.css';
+import { useTTS } from '../../hooks/useTTS';
 
 const STEPS = [
     { id: 1, name: 'Macro Context', icon: '📖' },
@@ -116,9 +117,13 @@ function Step1MacroContext({ chunk, onComplete }) {
 /**
  * Step 2: Vocabulary Build - Key words with original context
  */
+/**
+ * Step 2: Vocabulary Build - Key words with original context
+ */
 function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [showPeek, setShowPeek] = useState(false);
+    const { speak, isPlaying, isLoading } = useTTS();
 
     const currentWord = words[currentWordIndex];
     const hasWords = words.length > 0;
@@ -142,6 +147,13 @@ function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
 
     const handleSkipWord = () => {
         handleNext();
+    };
+
+    const handlePlayWord = (e) => {
+        e.stopPropagation();
+        if (currentWord) {
+            speak(currentWord.word);
+        }
     };
 
     // Long press handlers for Peek Origin
@@ -182,6 +194,15 @@ function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
             <div className={styles.wordCard}>
                 <div className={styles.wordMain}>
                     <span className={styles.wordText}>{currentWord.word}</span>
+                    <button
+                        className={`btn btn-ghost ${styles.wordAudioBtn}`}
+                        onClick={handlePlayWord}
+                        disabled={isLoading}
+                        title="Listen to pronunciation"
+                        style={{ marginLeft: '10px' }}
+                    >
+                        {isLoading && isPlaying ? '⏳' : '🔊'}
+                    </button>
                     <span className={styles.phonetic}>{currentWord.phonetic}</span>
                 </div>
                 <p className={styles.definition}>{currentWord.definition}</p>
@@ -235,6 +256,7 @@ function Step2VocabularyBuild({ words, onWordAction, onComplete }) {
  */
 function Step3Articulation({ chunk, onComplete }) {
     const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+    const { speak, stop, isPlaying, isLoading, error } = useTTS();
 
     // Split chunk text into sentences
     const sentences = chunk.originalText
@@ -246,10 +268,19 @@ function Step3Articulation({ chunk, onComplete }) {
     const isLast = currentSentenceIndex >= sentences.length - 1;
 
     const handleNext = () => {
+        stop(); // Stop audio if playing
         if (isLast) {
             onComplete();
         } else {
             setCurrentSentenceIndex(prev => prev + 1);
+        }
+    };
+
+    const handlePlay = () => {
+        if (isPlaying) {
+            stop();
+        } else {
+            speak(currentSentence);
         }
     };
 
@@ -282,9 +313,16 @@ function Step3Articulation({ chunk, onComplete }) {
                 <p className={styles.sentenceText}>{currentSentence}</p>
 
                 <div className={styles.audioControls}>
-                    <button className={`btn btn-ghost ${styles.audioBtn}`} title="Listen (Coming soon)">
-                        🔊 Listen
+                    <button
+                        className={`btn ${isPlaying ? 'btn-secondary' : 'btn-ghost'} ${styles.audioBtn}`}
+                        onClick={handlePlay}
+                        disabled={isLoading}
+                        title={error ? `Error: ${error}` : "Listen to pronunciation"}
+                    >
+                        {isLoading ? '⏳ Loading...' : isPlaying ? '⏹️ Stop' : '🔊 Listen'}
                     </button>
+                    {error && <span className={styles.errorText} style={{ color: 'red', fontSize: '12px', marginLeft: '10px' }}>⚠️ TTS Error</span>}
+
                     <button className={`btn btn-ghost ${styles.audioBtn}`} title="Record (Coming soon)">
                         🎙️ Record
                     </button>

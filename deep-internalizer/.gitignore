@@ -13,8 +13,7 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+.vscode
 .idea
 .DS_Store
 *.suo
@@ -22,3 +21,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python / TTS Server
+scripts/tts_server/venv/
+__pycache__/
+*.py[cod]
+
+# TTS model cache (optional, if stored locally)
+scripts/tts_server/models/
