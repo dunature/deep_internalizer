@@ -19,8 +19,7 @@ import {
 } from './db/schema';
 import {
   chunkDocument,
-  generateCoreThesis,
-  extractKeywords
+  generateCoreThesis
 } from './services/chunkingService';
 import './App.css';
 
@@ -127,7 +126,8 @@ function App() {
       }
     };
     init();
-  }, [checkDebt, restoreSession]);
+    // Note: setCurrentChunk and setCurrentStep are stable Zustand setters
+  }, [checkDebt, restoreSession, setCurrentChunk, setCurrentStep]);
 
   // Load document with chunks
   const loadDocument = async (docId) => {

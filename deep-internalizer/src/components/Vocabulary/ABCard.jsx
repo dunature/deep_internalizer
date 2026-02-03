@@ -6,6 +6,7 @@
  */
 import { useState, useRef, useCallback } from 'react';
 import styles from './ABCard.module.css';
+import { HighlightedText } from '../common';
 
 const SWIPE_THRESHOLD = 80;
 
@@ -133,7 +134,12 @@ export default function ABCard({
                 >
                     <div className={styles.cardLabel}>New Context</div>
                     <p className={styles.contextText}>
-                        <HighlightedText text={word.newContext || word.originalContext} highlight={word.text} />
+                        <HighlightedText
+                            text={word.newContext || word.originalContext}
+                            highlight={word.text}
+                            as={null}
+                            highlightClassName={styles.highlight}
+                        />
                     </p>
                     <div className={styles.definitionBox}>
                         <p className={styles.definition}>{word.definition}</p>
@@ -167,7 +173,12 @@ export default function ABCard({
                         <span className={styles.phonetic}>{word.phonetic}</span>
                     </div>
                     <p className={styles.contextText}>
-                        <HighlightedText text={word.originalContext} highlight={word.text} />
+                        <HighlightedText
+                            text={word.originalContext}
+                            highlight={word.text}
+                            as={null}
+                            highlightClassName={styles.highlight}
+                        />
                     </p>
                     <div className={styles.definitionBox}>
                         <p className={styles.definition}>{word.definition}</p>
@@ -207,22 +218,5 @@ export default function ABCard({
                 </button>
             </div>
         </div>
-    );
-}
-
-function HighlightedText({ text, highlight }) {
-    if (!text || !highlight) return text;
-
-    const regex = new RegExp(`(${highlight})`, 'gi');
-    const parts = text.split(regex);
-
-    return (
-        <>
-            {parts.map((part, i) =>
-                part.toLowerCase() === highlight.toLowerCase()
-                    ? <mark key={i} className={styles.highlight}>{part}</mark>
-                    : part
-            )}
-        </>
     );
 }

@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import styles from './VocabularyCard.module.css';
+import { HighlightedText } from '../common';
 
 export default function VocabularyCard({
     word,
@@ -33,14 +34,6 @@ export default function VocabularyCard({
         // Use speakSyllable for cached syllable playback at slower speed
         await speak(slice.text, { type: 'syllable', speed: 0.7 });
         setActiveSyllable(null);
-    };
-
-    // Peek wrapper to prevent default behaviors (text selection, context menu)
-    const handlePeekStart = (e) => {
-        if (e.type === 'touchstart') {
-            e.preventDefault();
-        }
-        onPeekStart(e);
     };
 
     const [isFlipped, setIsFlipped] = useState(false);
@@ -184,23 +177,5 @@ export default function VocabularyCard({
                 </div>
             </div>
         </div>
-    );
-}
-
-// Helper to highlight word in text
-function HighlightedText({ text, highlight }) {
-    if (!text) return null;
-    if (!highlight) return <p>{text}</p>;
-
-    // Simple case-insensitive split/join
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-    return (
-        <p>
-            {parts.map((part, i) =>
-                part.toLowerCase() === highlight.toLowerCase()
-                    ? <strong key={i} style={{ color: 'var(--color-accent-primary)' }}>{part}</strong>
-                    : part
-            )}
-        </p>
     );
 }

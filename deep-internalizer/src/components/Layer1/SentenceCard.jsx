@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { splitSentenceIntoGroups } from '../../services/chunkingService';
 import styles from './SentenceCard.module.css';
 
-export default function SentenceCard({ sentence, translation, speak, isPlaying, isBilingual }) {
+export default function SentenceCard({ sentence, translation, speak, isBilingual }) {
     const [isSplit, setIsSplit] = useState(false);
     const [thoughtGroups, setThoughtGroups] = useState([]);
     const [isLoading, setIsLoading] = useState(false);

@@ -139,10 +139,10 @@ class PrefetchService {
      * Cancel all pending prefetches
      */
     cancelAll() {
-        for (const [chunkId, pending] of this.pendingKeywords) {
+        for (const [, pending] of this.pendingKeywords) {
             pending.abort();
         }
-        for (const [chunkId, pending] of this.pendingTranslations) {
+        for (const [, pending] of this.pendingTranslations) {
             pending.abort();
         }
         this.pendingKeywords.clear();

@@ -3,12 +3,13 @@
  * The 4-step reading loop for each chunk
  * Now with background prefetching support
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './SegmentLoop.module.css';
 import { useTTS } from '../../hooks/useTTS';
 import { prefetchService } from '../../services/prefetchService';
 import VocabularyCard from './VocabularyCard';
 import SentenceCard from './SentenceCard';
+import { HighlightedText } from '../common';
 
 const STEPS = [
     { id: 1, name: 'Macro Context', icon: '📖' },
@@ -26,41 +27,60 @@ export default function SegmentLoop({
     onBack
 }) {
     const [isBilingual, setIsBilingual] = useState(false);
-    const [prefetchedWords, setPrefetchedWords] = useState([]);
-    const [isLoadingWords, setIsLoadingWords] = useState(false);
+    const [prefetchedWords, setPrefetchedWords] = useState(null); // null = loading, [] = loaded empty
+    const [prefetchError, setPrefetchError] = useState(false);
     const abortRef = useRef(null);
+    const lastChunkIdRef = useRef(null);
+
+    // Reset state when chunk changes (during render, not in effect)
+    const currentChunkId = chunk?.id;
+    if (currentChunkId !== lastChunkIdRef.current) {
+        lastChunkIdRef.current = currentChunkId;
+        // These are safe to call during render when we're resetting for a new chunk
+        if (prefetchedWords !== null) {
+            setPrefetchedWords(null);
+        }
+        if (prefetchError) {
+            setPrefetchError(false);
+        }
+    }
+
+    // Derive loading state from data presence
+    const isLoadingWords = prefetchedWords === null && !prefetchError && currentChunkId && chunk?.originalText;
 
     // Use external words if provided, otherwise use prefetched
-    const words = externalWords.length > 0 ? externalWords : prefetchedWords;
+    const words = useMemo(() => {
+        return externalWords.length > 0 ? externalWords : (prefetchedWords || []);
+    }, [externalWords, prefetchedWords]);
 
     // Prefetch keywords when entering Step 1
     useEffect(() => {
-        if (!chunk?.id || !chunk?.originalText) return;
+        if (!currentChunkId || !chunk?.originalText) {
+            return;
+        }
 
         const controller = new AbortController();
         abortRef.current = controller;
 
-        // Start prefetch in background
-        setIsLoadingWords(true);
-        prefetchService.prefetchKeywords(chunk.id, chunk.originalText, controller.signal)
+        // Fetch keywords in background
+        prefetchService.prefetchKeywords(currentChunkId, chunk.originalText, controller.signal)
             .then(keywords => {
                 if (!controller.signal.aborted) {
-                    setPrefetchedWords(keywords);
-                    setIsLoadingWords(false);
+                    setPrefetchedWords(keywords || []);
                 }
             })
             .catch(e => {
                 if (e.name !== 'AbortError') {
                     console.error('[SegmentLoop] Prefetch failed:', e);
-                    setIsLoadingWords(false);
+                    setPrefetchError(true);
                 }
             });
 
         return () => {
             controller.abort();
-            prefetchService.cancelPrefetch(chunk.id);
+            prefetchService.cancelPrefetch(currentChunkId);
         };
-    }, [chunk?.id, chunk?.originalText]);
+    }, [currentChunkId, chunk?.originalText]);
 
     // Prefetch TTS when entering Step 2 (Vocabulary Build)
     useEffect(() => {
@@ -184,7 +204,7 @@ function Step1MacroContext({ chunk, isBilingual, onComplete }) {
 function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, onComplete, isBilingual }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [showPeek, setShowPeek] = useState(false);
-    const { speak, isPlaying, isLoading } = useTTS();
+    const { speak, isLoading } = useTTS();
 
     const currentWord = words[currentWordIndex];
     const hasWords = words.length > 0;
@@ -307,9 +327,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
             {showPeek && (
                 <div className={styles.peekOverlay}>
                     <div className={styles.peekContent}>
-                        <HighlightedSentence
+                        <HighlightedText
                             text={currentWord.sentence}
                             highlight={currentWord.word}
+                            highlightClassName={styles.highlight}
                         />
                     </div>
                 </div>
@@ -323,28 +344,50 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
  */
 function Step3Articulation({ chunk, onComplete, isBilingual }) {
     const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-    const [translations, setTranslations] = useState([]);
-    const [isLoadingTranslations, setIsLoadingTranslations] = useState(false);
+    const [translations, setTranslations] = useState(null); // null = not loaded yet
     const { speak, stop, isPlaying, isLoading, error } = useTTS();
+    const lastChunkIdRef = useRef(null);
 
-    // Split chunk text into sentences
-    const sentences = chunk.originalText
-        ?.split(/(?<=[.!?])\s+/)
-        .filter(s => s.trim().length > 0)
-        .slice(0, 5) || []; // Limit to 5 sentences
+    // Get originalText safely
+    const originalText = chunk?.originalText;
+    const chunkId = chunk?.id;
+
+    // Reset state when chunk changes (during render, not in effect)
+    if (chunkId !== lastChunkIdRef.current) {
+        lastChunkIdRef.current = chunkId;
+        if (translations !== null) {
+            setTranslations(null);
+        }
+        if (currentSentenceIndex !== 0) {
+            setCurrentSentenceIndex(0);
+        }
+    }
+
+    // Split chunk text into sentences - memoize to stabilize reference
+    const sentences = useMemo(() => {
+        if (!originalText) return [];
+        return originalText
+            .split(/(?<=[.!?])\s+/)
+            .filter(s => s.trim().length > 0)
+            .slice(0, 5); // Limit to 5 sentences
+    }, [originalText]);
+
+    // Derive loading state from data presence
+    const isLoadingTranslations = translations === null && sentences.length > 0 && chunkId;
 
     // Fetch translations on mount
     useEffect(() => {
-        if (chunk.id && sentences.length > 0) {
-            setIsLoadingTranslations(true);
-            prefetchService.prefetchTranslations(chunk.id, sentences)
-                .then(setTranslations)
-                .finally(() => setIsLoadingTranslations(false));
+        if (!chunkId || sentences.length === 0) {
+            return;
         }
-    }, [chunk.id, sentences.length]);
+
+        prefetchService.prefetchTranslations(chunkId, sentences)
+            .then(result => setTranslations(result || []))
+            .catch(() => setTranslations([])); // On error, set empty array
+    }, [chunkId, sentences]);
 
     const currentSentence = sentences[currentSentenceIndex];
-    const currentTranslation = translations[currentSentenceIndex];
+    const currentTranslation = translations?.[currentSentenceIndex];
     const isLast = currentSentenceIndex >= sentences.length - 1;
 
     const handleNext = () => {
@@ -394,7 +437,6 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
                 sentence={currentSentence}
                 translation={currentTranslation || (isLoadingTranslations ? "Translating..." : "")}
                 speak={speak}
-                isPlaying={isPlaying}
                 isBilingual={isBilingual}
             />
 
@@ -517,26 +559,6 @@ function Step4FlowPractice({ chunk, onComplete }) {
                 </>
             )}
         </div>
-    );
-}
-
-/**
- * Helper: Highlight word in sentence
- */
-function HighlightedSentence({ text, highlight }) {
-    if (!text || !highlight) return <p>{text}</p>;
-
-    const regex = new RegExp(`(${highlight})`, 'gi');
-    const parts = text.split(regex);
-
-    return (
-        <p>
-            {parts.map((part, i) =>
-                part.toLowerCase() === highlight.toLowerCase()
-                    ? <mark key={i} className={styles.highlight}>{part}</mark>
-                    : part
-            )}
-        </p>
     );
 }
 

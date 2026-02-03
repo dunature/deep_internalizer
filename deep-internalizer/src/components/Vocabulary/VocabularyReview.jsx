@@ -2,7 +2,7 @@
  * Vocabulary Review Screen
  * For clearing context debt
  */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ABCard from './ABCard';
 import styles from './VocabularyReview.module.css';
 

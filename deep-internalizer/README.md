@@ -2,6 +2,7 @@
 
 [![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react)](https://react.dev/)
+[![Status](https://img.shields.io/badge/Status-Internal_Beta_v0.1.0--beta.1-yellow)]()
 [![Performance](https://img.shields.io/badge/Performance-Optimized-brightgreen)]()
 [![Dexie](https://img.shields.io/badge/IndexedDB-Local_First-blue)](https://dexie.org/)
 [![PWA](https://img.shields.io/badge/PWA-Supported-orange)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
@@ -131,3 +132,9 @@ npm run dev
 ## 📜 License
 MIT - Designed for personal growth and deep literacy.
 MIT - 为个人成长与深度阅读而设计。
+
+---
+
+> [!NOTE]
+> **Internal Beta v0.1.0-beta.1**: This version focuses on "Zero-Wait" performance optimizations and architectural refactoring for a smoother reading experience.
+
