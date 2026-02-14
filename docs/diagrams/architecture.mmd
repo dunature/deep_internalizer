@@ -1,0 +1,33 @@
+```mermaid
+graph TB
+    %% Document Import
+    Import["📄 Document Import<br/>(PDF/DOCX/TXT)"] --> Parse["🔍 AI Text Cleaning<br/>(Remove artifacts, format)"]
+    Parse --> L0["🌍 Layer 0: Strategic Map"]
+    
+    %% Layer 0: Global Analysis
+    L0 --> Thesis["📌 Core Thesis<br/>(AI-generated summary)"]
+    L0 --> Chunks["🧩 Semantic Chunks<br/>(3-8 sentences each)"]
+    
+    %% Layer 1: Immersion Loop
+    Chunks --> L1["🎯 Layer 1: Immersion Loop"]
+    
+    L1 --> Step1["1️⃣ Macro Context<br/>(Framework understanding)"]
+    L1 --> Step2["2️⃣ Vocabulary Build<br/>(X-Ray context + flashcards)"]
+    L1 --> Step3["3️⃣ Articulation<br/>(IPA + TTS training)"]
+    L1 --> Step4["4️⃣ Flow Practice<br/>(Continuous reading)"]
+    
+    %% Progress Tracking
+    Step4 --> Progress["✅ Progress Tracking"]
+    Progress --> Review["📚 Vocabulary Review<br/>(Spaced repetition)"]
+    
+    %% Styling
+    classDef importNode fill:#667eea,stroke:#764ba2,stroke-width:2px,color:#fff
+    classDef layer0Node fill:#f093fb,stroke:#f5576c,stroke-width:2px,color:#fff
+    classDef layer1Node fill:#4facfe,stroke:#00f2fe,stroke-width:2px,color:#fff
+    classDef outputNode fill:#43e97b,stroke:#38f9d7,stroke-width:2px,color:#fff
+    
+    class Import,Parse importNode
+    class L0,Thesis,Chunks layer0Node
+    class L1,Step1,Step2,Step3,Step4 layer1Node
+    class Progress,Review outputNode
+```

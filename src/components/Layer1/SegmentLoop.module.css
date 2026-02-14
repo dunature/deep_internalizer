@@ -409,74 +409,30 @@
 }
 
 /* Step 4: Flow Practice */
-.flowIntro {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-6);
-    text-align: center;
+.flowPassage {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 var(--space-4);
 }
 
-.flowStats {
-    display: flex;
-    gap: var(--space-8);
+.flowParagraph {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.88);
+    margin-bottom: var(--space-10);
+    text-indent: 0;
+    letter-spacing: 0.01em;
 }
 
-.flowStat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.flowParagraph:last-child {
+    margin-bottom: 0;
 }
 
-.flowStatValue {
-    font-size: var(--text-3xl);
-    font-weight: 700;
-    color: var(--color-accent-primary);
-}
-
-.flowStatLabel {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-}
-
-.flowTimer {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
-}
-
-.timerValue {
-    font-size: var(--text-3xl);
-    font-weight: 700;
-    font-family: var(--font-mono);
+.flowHighlight {
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
     color: var(--color-text-primary);
-}
-
-.wpmValue {
-    font-size: var(--text-lg);
-    color: var(--color-accent-primary);
-}
-
-.fullTextCard {
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.fullText {
-    font-size: var(--text-lg);
-    line-height: 2;
-    color: var(--color-text-primary);
-}
-
-.flowActions {
-    display: flex;
-    gap: var(--space-4);
-    justify-content: center;
-    margin-top: var(--space-4);
+    padding: 0 4px;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 0 rgba(168, 85, 247, 0.3);
 }

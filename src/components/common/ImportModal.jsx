@@ -2,8 +2,9 @@
  * Import Modal Component
  * For importing new documents via text paste
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { parseFile, cleanTextPreserveParagraphs } from '../../utils/fileParser';
+import { getLLMConfig, saveLLMConfig } from '../../services/llmClient';
 import ThinkingProcess from './ThinkingProcess';
 import styles from './ImportModal.module.css';
 
@@ -34,10 +35,42 @@ export default function ImportModal({
     const [autoCleaned, setAutoCleaned] = useState(false);
     const [autoCleanOriginal, setAutoCleanOriginal] = useState('');
     const [autoCleanEnabled, setAutoCleanEnabled] = useState(true);
+    const [aiFormatEnabled, setAiFormatEnabled] = useState(true);
     const [parseStartedAt, setParseStartedAt] = useState(0);
     const [parseMetrics, setParseMetrics] = useState(null);
+    const [llmConfig, setLlmConfig] = useState(() => getLLMConfig());
 
     const fileInputRef = useRef(null);
+
+    // Sync LLM config when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setLlmConfig(getLLMConfig());
+        }
+    }, [isOpen]);
+
+    const handleLlmFieldChange = (e) => {
+        const { name, value } = e.target;
+        const updated = { ...llmConfig, [name]: value };
+        setLlmConfig(updated);
+        saveLLMConfig(updated);
+    };
+
+    const handleProviderSwitch = (e) => {
+        const provider = e.target.value;
+        let updated = { ...llmConfig, provider };
+
+        if (provider === 'deepseek' && (!updated.baseUrl || updated.baseUrl.includes('localhost'))) {
+            updated.baseUrl = 'https://api.deepseek.com';
+            updated.model = 'deepseek-chat';
+        } else if (provider === 'ollama' && (!updated.baseUrl || !updated.baseUrl.includes('localhost'))) {
+            updated.baseUrl = 'http://localhost:11434';
+            updated.model = 'llama3.1:latest';
+        }
+
+        setLlmConfig(updated);
+        saveLLMConfig(updated);
+    };
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -99,7 +132,7 @@ export default function ImportModal({
             return;
         }
 
-        onImport({ title: title.trim(), content: content.trim(), parseMetrics });
+        onImport({ title: title.trim(), content: content.trim(), parseMetrics, aiFormatEnabled });
     };
 
     const handleClose = () => {
@@ -111,6 +144,7 @@ export default function ImportModal({
         setAutoCleaned(false);
         setAutoCleanOriginal('');
         setAutoCleanEnabled(true);
+        setAiFormatEnabled(true);
         setParseStartedAt(0);
         setParseMetrics(null);
         onClose();
@@ -344,6 +378,72 @@ export default function ImportModal({
                             />
                         </div>
 
+                        {/* AI Settings - collapsible */}
+                        <details
+                            className={styles.llmSettings}
+                            open={llmConfig.provider !== 'ollama' && !llmConfig.apiKey}
+                        >
+                            <summary className={styles.llmSettingsSummary}>
+                                ⚙️ AI Settings
+                                <span className={styles.llmProvider}>
+                                    {llmConfig.provider === 'ollama' ? 'Ollama (Local)' : 'DeepSeek (Cloud)'}
+                                </span>
+                            </summary>
+                            <div className={styles.llmSettingsGrid}>
+                                <div className={styles.llmField}>
+                                    <label>Provider</label>
+                                    <select
+                                        name="provider"
+                                        value={llmConfig.provider}
+                                        onChange={handleProviderSwitch}
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    >
+                                        <option value="deepseek">DeepSeek (Cloud)</option>
+                                        <option value="ollama">Ollama (Local)</option>
+                                    </select>
+                                </div>
+                                <div className={styles.llmField}>
+                                    <label>Model</label>
+                                    <input
+                                        type="text"
+                                        name="model"
+                                        value={llmConfig.model}
+                                        onChange={handleLlmFieldChange}
+                                        placeholder="e.g. deepseek-chat"
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    />
+                                </div>
+                                <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
+                                    <label>Base URL</label>
+                                    <input
+                                        type="text"
+                                        name="baseUrl"
+                                        value={llmConfig.baseUrl}
+                                        onChange={handleLlmFieldChange}
+                                        placeholder="e.g. https://api.deepseek.com"
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    />
+                                </div>
+                                {llmConfig.provider !== 'ollama' && (
+                                    <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
+                                        <label>API Key</label>
+                                        <input
+                                            type="password"
+                                            name="apiKey"
+                                            value={llmConfig.apiKey}
+                                            onChange={handleLlmFieldChange}
+                                            placeholder="Enter your API key"
+                                            className={styles.input}
+                                            disabled={isLoading || isParsing}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </details>
+
                         <div className={styles.field}>
                             <div className={styles.labelRow}>
                                 <label htmlFor="content">Content Preview</label>
@@ -356,6 +456,15 @@ export default function ImportModal({
                                             disabled={isParsing || isLoading}
                                         />
                                         <span>Auto-clean on import</span>
+                                    </label>
+                                    <label className={styles.toggle} title="AI will remove page artifacts and format text into clean paragraphs">
+                                        <input
+                                            type="checkbox"
+                                            checked={aiFormatEnabled}
+                                            onChange={(e) => setAiFormatEnabled(e.target.checked)}
+                                            disabled={isParsing || isLoading}
+                                        />
+                                        <span>🤖 AI Format</span>
                                     </label>
                                     {content && (
                                         <button

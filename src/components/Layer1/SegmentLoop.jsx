@@ -9,7 +9,6 @@ import { useTTS } from '../../hooks/useTTS';
 import { prefetchService } from '../../services/prefetchService';
 import VocabularyCard from './VocabularyCard';
 import SentenceCard from './SentenceCard';
-import { HighlightedText } from '../common';
 
 const STEPS = [
     { id: 1, name: 'Macro Context', icon: '📖' },
@@ -69,7 +68,7 @@ export default function SegmentLoop({
                     setPrefetchedWords(cached);
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
 
         // Fetch keywords in background
         prefetchService.prefetchKeywords(currentChunkId, chunk.originalText, controller.signal)
@@ -102,7 +101,7 @@ export default function SegmentLoop({
         const rest = words.slice(2);
         if (rest.length === 0) return;
 
-        let cancel = () => {};
+        let cancel = () => { };
         if (typeof requestIdleCallback !== 'undefined') {
             const id = requestIdleCallback(() => prefetchService.prefetchTTSForWords(rest));
             cancel = () => cancelIdleCallback(id);
@@ -119,7 +118,7 @@ export default function SegmentLoop({
         if (currentStep !== 1 || words.length === 0) return;
 
         const firstBatch = words.slice(0, 2);
-        let cancel = () => {};
+        let cancel = () => { };
 
         if (typeof requestIdleCallback !== 'undefined') {
             const id = requestIdleCallback(() => prefetchService.prefetchTTSForWords(firstBatch));
@@ -164,7 +163,7 @@ export default function SegmentLoop({
                     />
                 );
             case 4:
-                return <Step4FlowPractice chunk={chunk} onComplete={() => onStepComplete(4)} />;
+                return <Step4FlowPractice chunk={chunk} words={words} onComplete={() => onStepComplete(4)} />;
             default:
                 return null;
         }
@@ -247,7 +246,6 @@ function Step1MacroContext({ chunk, isBilingual, onComplete }) {
  */
 function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, onComplete, isBilingual, chunkId }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    const [showPeek, setShowPeek] = useState(false);
     const [isDeferred, setIsDeferred] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addedWords, setAddedWords] = useState(() => new Set());
@@ -269,7 +267,7 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
         }
 
         setIsDeferred(true);
-        let cancel = () => {};
+        let cancel = () => { };
 
         if (typeof requestIdleCallback !== 'undefined') {
             const id = requestIdleCallback(() => setIsDeferred(false));
@@ -284,7 +282,6 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     useEffect(() => {
         setCurrentWordIndex(0);
-        setShowPeek(false);
         setIsAdding(false);
         setAddedWords(new Set());
         lastAddKeyRef.current = null;
@@ -303,7 +300,6 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
             onComplete();
         } else {
             setCurrentWordIndex(prev => prev + 1);
-            setShowPeek(false);
         }
     };
 
@@ -354,24 +350,7 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
         handleNext();
     };
 
-    // Peek Origin handlers
-    const handlePeekStart = () => {
-        setShowPeek(true);
-        // Add global listeners to ensure we catch the release even if cursor moves off
-        window.addEventListener('mouseup', handlePeekEndGlobal);
-        window.addEventListener('touchend', handlePeekEndGlobal);
-    };
 
-    const handlePeekEndGlobal = () => {
-        setShowPeek(false);
-        window.removeEventListener('mouseup', handlePeekEndGlobal);
-        window.removeEventListener('touchend', handlePeekEndGlobal);
-    };
-
-    const handlePeekEnd = () => {
-        // Local handler just in case, but global covers it
-        handlePeekEndGlobal();
-    };
 
     // Show loading state while keywords are being fetched
     if (isLoadingWords) {
@@ -450,8 +429,6 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                 word={currentWord}
                 speak={speak}
                 isTTSLoading={isLoading}
-                onPeekStart={handlePeekStart}
-                onPeekEnd={handlePeekEnd}
                 isBilingual={isBilingual}
             />
 
@@ -466,20 +443,6 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                 </button>
                 <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} />
             </div>
-
-
-            {/* Peek Origin Overlay */}
-            {showPeek && (
-                <div className={styles.peekOverlay}>
-                    <div className={styles.peekContent}>
-                        <HighlightedText
-                            text={currentWord.sentence}
-                            highlight={currentWord.word}
-                            highlightClassName={styles.highlight}
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -606,41 +569,46 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
 }
 
 /**
- * Step 4: Flow Practice - Full paragraph reading
+ * Step 4: Flow Practice - Immersive full-passage reading
+ * Highlights vocabulary learned in Step 2 as "recall anchors"
  */
-function Step4FlowPractice({ chunk, onComplete }) {
-    const [readingStarted, setReadingStarted] = useState(false);
-    const [timer, setTimer] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
+function Step4FlowPractice({ chunk, words = [], onComplete }) {
+    // Split text into paragraphs for clean rendering
+    const paragraphs = useMemo(() => {
+        if (!chunk?.originalText) return [];
+        return chunk.originalText
+            .split(/\n\s*\n/)
+            .map(p => p.trim())
+            .filter(p => p.length > 0);
+    }, [chunk?.originalText]);
 
-    useEffect(() => {
-        let interval;
-        if (isRunning) {
-            interval = setInterval(() => {
-                setTimer(prev => prev + 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isRunning]);
+    // Build a set of learned word texts for highlighting
+    const learnedWords = useMemo(() => {
+        return words
+            .map(w => w.word || w.text)
+            .filter(Boolean);
+    }, [words]);
 
-    const handleStartReading = () => {
-        setReadingStarted(true);
-        setIsRunning(true);
+    // Render paragraph text with vocabulary highlights
+    const renderWithHighlights = (text) => {
+        if (learnedWords.length === 0) return text;
+
+        // Build regex matching any learned word (word-boundary, case-insensitive)
+        const escaped = learnedWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
+
+        const parts = text.split(regex);
+        if (parts.length === 1) return text;
+
+        const lowerSet = new Set(learnedWords.map(w => w.toLowerCase()));
+
+        return parts.map((part, i) => {
+            if (lowerSet.has(part.toLowerCase())) {
+                return <mark key={i} className={styles.flowHighlight}>{part}</mark>;
+            }
+            return part;
+        });
     };
-
-    const handleStopReading = () => {
-        setIsRunning(false);
-    };
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    // Calculate approximate word count and WPM
-    const wordCount = chunk.originalText?.split(/\s+/).length || 0;
-    const wpm = timer > 0 ? Math.round((wordCount / timer) * 60) : 0;
 
     return (
         <div className={styles.stepContent}>
@@ -648,61 +616,21 @@ function Step4FlowPractice({ chunk, onComplete }) {
                 <span className={styles.stepLabel}>Step 4</span>
                 <h3>Flow Practice</h3>
                 <p className={styles.stepDesc}>
-                    Read the full passage smoothly
+                    Read the full passage — words you've learned are highlighted
                 </p>
             </div>
 
-            {!readingStarted ? (
-                <div className={styles.flowIntro}>
-                    <div className={styles.flowStats}>
-                        <div className={styles.flowStat}>
-                            <span className={styles.flowStatValue}>{wordCount}</span>
-                            <span className={styles.flowStatLabel}>words</span>
-                        </div>
-                        <div className={styles.flowStat}>
-                            <span className={styles.flowStatValue}>~{Math.ceil(wordCount / 150)}</span>
-                            <span className={styles.flowStatLabel}>min</span>
-                        </div>
-                    </div>
-
-                    <p className={styles.tipText}>
-                        💡 Goal: Read the entire passage aloud without stopping.
-                        Focus on maintaining a natural flow and connecting ideas.
+            <div className={styles.flowPassage}>
+                {paragraphs.map((para, idx) => (
+                    <p key={idx} className={styles.flowParagraph}>
+                        {renderWithHighlights(para)}
                     </p>
+                ))}
+            </div>
 
-                    <button className="btn btn-primary btn-large" onClick={handleStartReading}>
-                        Start Reading 📖
-                    </button>
-                </div>
-            ) : (
-                <>
-                    <div className={styles.flowTimer}>
-                        <span className={styles.timerValue}>{formatTime(timer)}</span>
-                        {timer > 0 && (
-                            <span className={styles.wpmValue}>{wpm} WPM</span>
-                        )}
-                    </div>
-
-                    <div className={styles.fullTextCard}>
-                        <p className={styles.fullText}>{chunk.originalText}</p>
-                    </div>
-
-                    <div className={styles.flowActions}>
-                        {isRunning ? (
-                            <button className="btn btn-secondary" onClick={handleStopReading}>
-                                ⏸️ Pause
-                            </button>
-                        ) : (
-                            <button className="btn btn-secondary" onClick={() => setIsRunning(true)}>
-                                ▶️ Resume
-                            </button>
-                        )}
-                        <button className="btn btn-primary" onClick={onComplete}>
-                            Complete Chunk ✓
-                        </button>
-                    </div>
-                </>
-            )}
+            <button className="btn btn-primary btn-large" onClick={onComplete}>
+                Complete Chunk ✓
+            </button>
         </div>
     );
 }

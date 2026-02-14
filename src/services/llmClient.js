@@ -3,7 +3,7 @@
  * Supports local Ollama and remote DeepSeek / GLM (OpenAI-compatible)
  */
 
-const DEFAULT_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'ollama';
+const DEFAULT_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'deepseek';
 
 const OLLAMA_BASE_URL = import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434';
 const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:latest';

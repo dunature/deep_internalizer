@@ -10,8 +10,6 @@ export default function VocabularyCard({
     word,
     speak,
     isTTSLoading,
-    onPeekStart,
-    onPeekEnd,
     isBilingual
 }) {
     const [isSplit, setIsSplit] = useState(false);
@@ -45,9 +43,7 @@ export default function VocabularyCard({
     }, [word]);
 
     const handleCardClick = () => {
-        if (!isSplit) {
-            setIsFlipped(!isFlipped);
-        }
+        setIsFlipped(!isFlipped);
     };
 
     return (
@@ -59,7 +55,11 @@ export default function VocabularyCard({
                 {/* Front Face: Target Word */}
                 <div className={styles.cardFaceFront}>
                     <div className={styles.frontContent}>
-                        <h2 className={styles.frontWord}>{word.word}</h2>
+                        <h2
+                            className={styles.frontWord}
+                            onClick={(e) => { e.stopPropagation(); speak(word.word); }}
+                            style={{ cursor: 'pointer' }}
+                        >{word.word}</h2>
 
                         {/* Phonetics on Front */}
                         <div className={styles.phoneticRowFront}>
@@ -93,43 +93,10 @@ export default function VocabularyCard({
                             </div>
                         )}
 
-                        {!isSplit && (
-                            <div className={styles.frontHint}>
-                                <span className={styles.clickToFlip}>Tap to flip</span>
-                            </div>
-                        )}
+                        <div className={styles.frontHint}>
+                            <span className={styles.clickToFlip}>Tap to flip</span>
+                        </div>
                     </div>
-
-                    {/* Peek Button on Front */}
-                    {/* Peek Button on Front */}
-                    <button
-                        className={styles.peekButtonFront}
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onPeekStart(e);
-                        }}
-                        onMouseUp={(e) => {
-                            e.stopPropagation();
-                            onPeekEnd(e);
-                        }}
-                        onMouseLeave={(e) => {
-                            e.stopPropagation();
-                            onPeekEnd(e);
-                        }}
-                        onTouchStart={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onPeekStart(e);
-                        }}
-                        onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            onPeekEnd(e);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        👁️ Hold for context
-                    </button>
                 </div>
 
                 {/* Back Face: Details */}
@@ -137,7 +104,11 @@ export default function VocabularyCard({
                     {/* Top Row: Word + Audio + POS */}
                     <div className={styles.cardBackHeader}>
                         <div className={styles.headerLeft}>
-                            <span className={styles.backWord}>{word.word}</span>
+                            <span
+                                className={styles.backWord}
+                                onClick={(e) => { e.stopPropagation(); speak(word.word); }}
+                                style={{ cursor: 'pointer' }}
+                            >{word.word}</span>
                             <button
                                 className={styles.audioBtn}
                                 onClick={(e) => { e.stopPropagation(); speak(word.word); }}

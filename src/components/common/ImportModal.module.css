@@ -371,3 +371,72 @@
         opacity: 1;
     }
 }
+
+/* AI Settings (collapsible) */
+.llmSettings {
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.llmSettingsSummary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transition-fast);
+    list-style: none;
+}
+
+.llmSettingsSummary::-webkit-details-marker {
+    display: none;
+}
+
+.llmSettingsSummary::before {
+    content: '▶';
+    font-size: 10px;
+    margin-right: var(--space-2);
+    transition: transform var(--transition-fast);
+}
+
+details[open] > .llmSettingsSummary::before {
+    transform: rotate(90deg);
+}
+
+.llmSettingsSummary:hover {
+    background: var(--color-bg-elevated);
+}
+
+.llmProvider {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: 400;
+}
+
+.llmSettingsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: 0 var(--space-4) var(--space-4);
+}
+
+.llmField {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.llmField label {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.llmFieldFull {
+    grid-column: 1 / -1;
+}

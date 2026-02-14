@@ -27,6 +27,7 @@ import {
   generateCoreThesis,
   generateDocumentSummary
 } from './services/chunkingService';
+import { cleanTextWithAI } from './services/textCleaningService';
 import { getLLMConfig } from './services/llmClient';
 import { hashText } from './utils/hash';
 import { computeTextMetrics } from './utils/textMetrics';
@@ -45,6 +46,7 @@ const VIEW = {
 
 const IMPORT_STEPS = [
   { key: 'INITIALIZING', label: 'Initialize' },
+  { key: 'FORMATTING', label: 'AI Formatting' },
   { key: 'SUMMARIZING', label: 'Summarize Document' },
   { key: 'CHUNKING', label: 'Semantic Chunking' },
   { key: 'PERSISTENCE', label: 'Create Document' },
@@ -305,7 +307,7 @@ function App() {
 
     targets.forEach(chunk => {
       prefetchService.prefetchKeywords(chunk.id, chunk.originalText)
-        .catch(() => {});
+        .catch(() => { });
     });
   }, [currentView, chunks, currentChunkIndex]);
 
@@ -561,7 +563,8 @@ function App() {
   };
 
   // Handle document import
-  const handleImport = async ({ title, content, parseMetrics }) => {
+  const handleImport = async ({ title, content: rawContent, parseMetrics, aiFormatEnabled = true }) => {
+    let content = rawContent;
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -601,6 +604,38 @@ function App() {
 
       const cacheHit = Boolean(cached?.coreThesis && Array.isArray(cached.chunks) && cached.chunks.length > 0);
       markStepComplete('INITIALIZING');
+
+      // AI Formatting step — clean raw text before analysis
+      if (aiFormatEnabled && !cacheHit) {
+        setProcessingStep('FORMATTING');
+        markStepStart('FORMATTING');
+        addLog('AI is cleaning and formatting the text...', 'active');
+        const formatStart = Date.now();
+        try {
+          const { cleanedText, chunks: chunkCount } = await cleanTextWithAI(
+            content, undefined, signal,
+            ({ current, total }) => {
+              if (total > 1) addLog(`Formatting chunk ${current}/${total}...`);
+            }
+          );
+          if (operationId !== asyncOperationIdRef.current) return;
+          content = cleanedText;
+          const formatMs = Date.now() - formatStart;
+          updateProcessingMeta(prev => ({
+            ...prev,
+            timings: { ...prev.timings, formatMs }
+          }));
+          markStepComplete('FORMATTING', { ms: formatMs });
+          addLog(`Text formatted (${chunkCount} chunk${chunkCount > 1 ? 's' : ''})`, 'done');
+        } catch (err) {
+          if (err.name === 'AbortError') throw err;
+          console.warn('[AI Formatting] Failed, using raw text:', err);
+          markStepComplete('FORMATTING', { status: 'skipped', ms: Date.now() - formatStart });
+          addLog('AI formatting skipped (using raw text)', 'done');
+        }
+      } else {
+        markStepComplete('FORMATTING', { status: 'skipped', ms: 0 });
+      }
 
       if (cacheHit) {
         updateProcessingMeta(prev => ({
@@ -711,7 +746,7 @@ function App() {
 
     // Start keyword prefetch immediately to speed up Step 2
     if (chunk.id && chunk.originalText) {
-      prefetchService.prefetchKeywords(chunk.id, chunk.originalText).catch(() => {});
+      prefetchService.prefetchKeywords(chunk.id, chunk.originalText).catch(() => { });
     }
 
     // Enter Layer1 immediately (no blocking LLM call)

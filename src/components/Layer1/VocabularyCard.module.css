@@ -1,10 +1,10 @@
 /* Flip Card Architecture */
 .cardScene {
     perspective: 1000px;
-    width: 100%;
+    width: 60%;
     height: 520px;
     /* Main height definition */
-    margin-bottom: var(--space-8);
+    margin: 0 auto var(--space-8);
 }
 
 .cardObject {
@@ -113,27 +113,7 @@
     margin-top: var(--space-4);
 }
 
-.peekButtonFront {
-    margin-bottom: var(--space-8);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: var(--space-3) var(--space-6);
-    border-radius: var(--radius-full);
-    color: var(--color-text-secondary);
-    cursor: grab;
-    transition: all 0.2s;
-    z-index: 20;
-    /* Ensure clickable */
-    user-select: none;
-    -webkit-user-select: none;
-}
 
-.peekButtonFront:active {
-    cursor: grabbing;
-    background: var(--color-accent-primary);
-    color: white;
-    transform: scale(0.95);
-}
 
 /* Back Face Styles */
 .cardFaceBack {
