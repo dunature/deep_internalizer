@@ -1,0 +1,3 @@
+Summarize the core thesis of this text in ONE sentence (max 30 words).
+Focus on the main argument or central idea.
+Output ONLY the thesis statement, nothing else.
