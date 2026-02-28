@@ -29,3 +29,8 @@ __pycache__/
 
 # TTS model cache (optional, if stored locally)
 scripts/tts_server/models/
+
+# Bridge Server
+bridge/.cache/
+bridge/node_modules/
+bridge/.env

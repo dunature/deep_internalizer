@@ -1,10 +1,14 @@
 /**
  * Import Modal Component
  * For importing new documents via text paste
+ * Enhanced with Bridge Server cache detection
  */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { parseFile, cleanTextPreserveParagraphs } from '../../utils/fileParser';
 import { getLLMConfig, saveLLMConfig } from '../../services/llmClient';
+import { hashText } from '../../utils/hash';
+import { checkBridgeCache, importFromBridge, isBridgeAvailable } from '../../services/cacheBridgeService';
+import { getAnalysisCache } from '../../db/schema';
 import ThinkingProcess from './ThinkingProcess';
 import styles from './ImportModal.module.css';
 
@@ -39,15 +43,111 @@ export default function ImportModal({
     const [parseStartedAt, setParseStartedAt] = useState(0);
     const [parseMetrics, setParseMetrics] = useState(null);
     const [llmConfig, setLlmConfig] = useState(() => getLLMConfig());
+    // Bridge cache detection state
+    const [bridgeCache, setBridgeCache] = useState(null); // { source: 'local'|'bridge', data: {...} }
+    const [bridgeChecking, setBridgeChecking] = useState(false);
+    const [bridgeAvailable, setBridgeAvailable] = useState(false);
 
     const fileInputRef = useRef(null);
+    const cacheCheckTimer = useRef(null);
 
-    // Sync LLM config when modal opens
+    // Sync LLM config and check Bridge availability when modal opens
     useEffect(() => {
         if (isOpen) {
             setLlmConfig(getLLMConfig());
+            isBridgeAvailable().then(setBridgeAvailable);
         }
     }, [isOpen]);
+
+    // Check for ?bridgeHash URL parameter (CLI-triggered import)
+    useEffect(() => {
+        if (!isOpen) return;
+        const params = new URLSearchParams(window.location.search);
+        const bridgeHash = params.get('bridgeHash');
+        if (bridgeHash) {
+            // Remove param from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('bridgeHash');
+            window.history.replaceState({}, '', url);
+            // Load from Bridge
+            loadBridgeByHash(bridgeHash);
+        }
+    }, [isOpen]);
+
+    // Debounced cache check when content changes
+    const checkContentCache = useCallback(async (text) => {
+        if (!text || text.trim().length < 50) {
+            setBridgeCache(null);
+            return;
+        }
+        setBridgeChecking(true);
+        try {
+            const hash = await hashText(text.trim());
+            // 1. Check local analysisCache
+            const local = await getAnalysisCache(hash);
+            if (local) {
+                setBridgeCache({ source: 'local', data: local, hash });
+                setBridgeChecking(false);
+                return;
+            }
+            // 2. Check Bridge Server
+            if (bridgeAvailable) {
+                const remote = await checkBridgeCache(hash);
+                if (remote) {
+                    setBridgeCache({ source: 'bridge', data: remote, hash });
+                    setBridgeChecking(false);
+                    return;
+                }
+            }
+            setBridgeCache(null);
+        } catch {
+            setBridgeCache(null);
+        } finally {
+            setBridgeChecking(false);
+        }
+    }, [bridgeAvailable]);
+
+    // Trigger debounced cache check when content changes
+    useEffect(() => {
+        if (cacheCheckTimer.current) clearTimeout(cacheCheckTimer.current);
+        cacheCheckTimer.current = setTimeout(() => checkContentCache(content), 800);
+        return () => clearTimeout(cacheCheckTimer.current);
+    }, [content, checkContentCache]);
+
+    // Load content from Bridge by hash
+    async function loadBridgeByHash(hash) {
+        setBridgeChecking(true);
+        try {
+            const data = await importFromBridge(hash);
+            if (data) {
+                setBridgeCache({ source: 'bridge', data, hash });
+                if (data.title) setTitle(data.title);
+            }
+        } catch {
+            // Silently fail
+        } finally {
+            setBridgeChecking(false);
+        }
+    }
+
+    // Handle "Load Cache" action
+    function handleLoadCache() {
+        if (!bridgeCache?.data) return;
+        const { data, hash } = bridgeCache;
+        onImport({
+            title: title.trim() || data.title || 'Untitled',
+            content: content.trim(),
+            parseMetrics,
+            aiFormatEnabled,
+            cachedAnalysis: {
+                hash,
+                coreThesis: data.coreThesis || '',
+                summary: data.summary || '',
+                model: data.model || '',
+                chunks: data.chunks || []
+            }
+        });
+    }
 
     const handleLlmFieldChange = (e) => {
         const { name, value } = e.target;
@@ -147,6 +247,8 @@ export default function ImportModal({
         setAiFormatEnabled(true);
         setParseStartedAt(0);
         setParseMetrics(null);
+        setBridgeCache(null);
+        setBridgeChecking(false);
         onClose();
     };
 
@@ -515,6 +617,42 @@ export default function ImportModal({
                                 </div>
                             )}
                         </div>
+
+                        {/* Bridge Cache Detection Banner */}
+                        {bridgeCache && (
+                            <div className={styles.cacheBanner}>
+                                <div className={styles.cacheBannerContent}>
+                                    <span className={styles.cacheBannerIcon}>⚡</span>
+                                    <div>
+                                        <strong>缓存命中</strong> — 此内容已分析过
+                                        <span className={styles.cacheBadge}>
+                                            {bridgeCache.source === 'local' ? 'Local' : 'Bridge'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={styles.cacheBannerActions}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={handleLoadCache}
+                                    >
+                                        加载缓存
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost"
+                                        onClick={() => setBridgeCache(null)}
+                                    >
+                                        重新分析
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {bridgeChecking && (
+                            <div className={styles.cacheChecking}>
+                                <span className="spinner" /> 检查缓存中...
+                            </div>
+                        )}
 
                         {error && (
                             <div className={styles.error}>{error}</div>

@@ -77,7 +77,7 @@ db.version(4).stores({
   analysisCache: 'hash, createdAt'
 });
 
-db.version(5).stores({
+db.version(6).stores({
   // Documents: imported articles/texts
   documents: 'id, title, importedAt, lastAccessedAt',
 
@@ -113,7 +113,10 @@ db.version(5).stores({
   analysisCache: 'hash, createdAt',
 
   // Thought groups cache for sentences
-  thoughtGroups: 'hash, createdAt'
+  thoughtGroups: 'hash, createdAt',
+
+  // Claude Code cache (extended fields for Claude Code Skill integration)
+  claudeCodeCache: 'hash, taskId, source, createdAt'
 });
 
 // Enums
@@ -372,6 +375,57 @@ export async function setThoughtGroupsCache(hash, groups, model = '') {
     }
   } catch (error) {
     console.warn('[Cache] Thought group cache cleanup failed:', error);
+  }
+}
+
+// === CLAUDE CODE CACHE FUNCTIONS ===
+
+const MAX_CLAUDE_CODE_CACHE_SIZE = 30;
+
+/**
+ * Get Claude Code cache entry
+ * @param {string} hash - Content hash
+ * @returns {Promise<object|null>}
+ */
+export async function getClaudeCodeCache(hash) {
+  if (!hash) return null;
+  return await db.claudeCodeCache.get(hash);
+}
+
+/**
+ * Set Claude Code cache entry
+ * @param {string} hash - Content hash
+ * @param {object} data - Cache data
+ * @param {string} data.taskId - Task ID from Bridge
+ * @param {string} data.source - Source identifier (claude-code-skill, cli, etc.)
+ * @param {object} data.result - Analysis result
+ * @param {string} [data.title] - Document title
+ * @param {string} [data.url] - Source URL
+ */
+export async function setClaudeCodeCache(hash, { taskId, source, result, title, url }) {
+  if (!hash) return;
+  await db.claudeCodeCache.put({
+    hash,
+    taskId,
+    source,
+    result,
+    title,
+    url,
+    createdAt: Date.now()
+  });
+
+  try {
+    const count = await db.claudeCodeCache.count();
+    if (count > MAX_CLAUDE_CODE_CACHE_SIZE) {
+      const toDelete = count - MAX_CLAUDE_CODE_CACHE_SIZE;
+      const oldest = await db.claudeCodeCache
+        .orderBy('createdAt')
+        .limit(toDelete)
+        .toArray();
+      await db.claudeCodeCache.bulkDelete(oldest.map(item => item.hash));
+    }
+  } catch (error) {
+    console.warn('[Cache] Claude Code cache cleanup failed:', error);
   }
 }
 

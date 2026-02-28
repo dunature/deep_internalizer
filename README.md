@@ -2,8 +2,9 @@
 
 [![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react)](https://react.dev/)
-[![Status](https://img.shields.io/badge/Status-Beta_v0.2.0-yellow)](https://github.com/your-repo)
+[![Status](https://img.shields.io/badge/Status-Beta_v0.3.0-green)](https://github.com/your-repo)
 [![PWA](https://img.shields.io/badge/PWA-离线支持-orange)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
+[![Bridge](https://img.shields.io/badge/Bridge-Server-ff69b4)](bridge/)
 
 > **"阅读的目的不是为了读完更多的书，而是为了让更少的内容在穿过你的灵魂时不留痕迹。"**
 >
@@ -45,6 +46,10 @@
 > [!CAUTION]
 > **【定制开发】高级配置**  
 > 跳转至：[🛠️ 安装指南](#️-安装指南)、[🔧 LLM 配置](#-llm-提供商选项)、[🎤 TTS 配置](#-tts-服务器配置)
+
+> [!TIP]
+> **v0.3.0 新功能**：Claude Code 集成
+> 跳转至：[🔥 v0.3.0 新功能：Claude Code 集成](#-v030-新功能 claude-code-集成)
 
 ---
 
@@ -382,23 +387,39 @@ src/
 │   ├── Vocabulary/          # 复习界面
 │   │   └── VocabularyReview.jsx
 │   └── common/              # 共享组件
-│       ├── ImportModal.jsx
+│       ├── ImportModal.jsx      # 导入模态框 (支持 Claude Code JSON)
 │       ├── ThinkingProcess.jsx  # AI 可视化
 │       └── UserProfile.jsx
 ├── services/
-│   ├── chunkingService.js   # LLM 桥接（Ollama/DeepSeek）
-│   ├── textCleaningService.js  # AI 文本格式化
-│   ├── ttsService.js        # 音频引擎（缓存）
-│   ├── prefetchService.js   # 后台加载管理
-│   └── llmClient.js         # 多提供商 LLM 客户端
+│   ├── claudeCodeImporter.js    # Claude Code 导入服务
+│   ├── cacheBridgeService.js    # Bridge 通信服务
+│   ├── chunkingService.js       # LLM 桥接（Ollama/DeepSeek）
+│   ├── textCleaningService.js   # AI 文本格式化
+│   ├── ttsService.js            # 音频引擎（缓存）
+│   ├── prefetchService.js       # 后台加载管理
+│   └── llmClient.js             # 多提供商 LLM 客户端
 ├── db/
-│   └── schema.js            # IndexedDB 模式（Dexie）
+│   └── schema.js                # IndexedDB 模式（Dexie）
 ├── hooks/
-│   └── useTTS.js            # React TTS 适配器
+│   └── useTTS.js                # React TTS 适配器
 └── utils/
-    ├── fileParser.js        # PDF/DOCX 解析器
-    └── textMetrics.js       # 阅读速度计算器
+    ├── fileParser.js            # PDF/DOCX 解析器
+    └── textMetrics.js           # 阅读速度计算器
+
+bridge/                              # Claude Code Bridge Server
+├── server.js                        # Express 服务器 (端口 3737)
+├── routes/
+│   ├── content.js                   # POST /api/content/analyze
+│   ├── tasks.js                     # GET /api/tasks/:taskId
+│   └── cache.js                     # GET/POST /api/cache/:hash
+└── services/
+    ├── aiProcessor.js               # LLM 调用
+    ├── taskQueue.js                 # 异步任务队列
+    ├── cacheManager.js              # 文件缓存管理
+    └── hashService.js               # SHA-256 哈希计算
 ```
+
+**Claude Code Skill**: `~/.claude/skills/deep-internalizer-analyzer/`
 
 ---
 
@@ -415,6 +436,12 @@ src/
 - **LLM**：Ollama（Llama 3.1）/ DeepSeek / GLM
 - **TTS**：Kokoro-TTS（8200万参数，Python/ONNX）
 - **Prompt**：定制认知分析链
+
+### Bridge Server（Claude Code 集成）
+- **框架**：Express 5.x
+- **速率限制**：express-rate-limit（100 req/15min 全局，20 req/hour 分析）
+- **请求日志**：morgan（combined 格式）
+- **缓存**：文件系统 + SHA-256 哈希
 
 ---
 
@@ -438,8 +465,8 @@ MIT License —— 为个人成长和深度读写能力而设计。
 ---
 
 > [!NOTE]
-> **版本**：Beta v0.2.0  
-> **重点**：零等待性能 + AI 文本清洗  
+> **版本**：Beta v0.3.0
+> **重点**：零等待性能 + AI 文本清洗 + Claude Code 集成
 > **下一步**：移动端 app、协作阅读、知识图谱可视化
 
 ---
@@ -450,6 +477,60 @@ MIT License —— 为个人成长和深度读写能力而设计。
 - **[API 文档](docs/api.md)**：LLM prompt 模式、TTS 端点
 - **[研究论文](docs/research.md)**：认知科学基础
 - **[常见问题](docs/faq.md)**：常见问题与故障排除
+
+---
+
+## 🔥 v0.3.0 新功能：Claude Code 集成
+
+**2026-02-28 发布** - 现在可以通过 Claude Code Skill 直接导入分析内容到 Deep Internalizer！
+
+### 数据流
+
+```
+Claude Code → Bridge Server → IndexedDB → Deep Internalizer
+   ↓             ↓
+JSON 导出    缓存管理
+```
+
+### 快速开始
+
+**步骤 1**: 在 Claude Code 中分析文章
+```bash
+/analyze-article https://example.com/article
+```
+
+**步骤 2**: 导出为 JSON（自动复制到剪贴板）
+
+**步骤 3**: 在 Deep Internalizer 中
+- 打开 Import Modal
+- 粘贴 JSON 内容
+- 自动检测缓存（本地 → Bridge）
+- 点击"加载缓存"开始学习
+
+### Bridge Server 启动
+
+```bash
+cd bridge
+npm install
+npm start
+# 运行在 http://localhost:3737
+```
+
+### 三层缓存策略
+
+| 层级 | 位置 | 容量 |
+|------|------|------|
+| L1 | IndexedDB `analysisCache` | 20 条 LRU |
+| L2 | IndexedDB `claudeCodeCache` | 30 条 LRU |
+| L3 | Bridge Server 文件缓存 | 无限制 |
+
+详见：[CLAUDE_CODE_IMPORT_FEATURE.md](CLAUDE_CODE_IMPORT_FEATURE.md)
+
+---
+
+## 📜 许可证
+
+MIT License —— 为个人成长和深度读写能力而设计。
 
 ---
 
