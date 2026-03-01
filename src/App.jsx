@@ -22,11 +22,7 @@ import {
   ReviewAction,
   saveReadingSession
 } from './db/schema';
-import {
-  chunkDocument,
-  generateCoreThesis,
-  generateDocumentSummary
-} from './services/chunkingService';
+import bridgeClient from './api/bridgeClient';
 import { cleanTextWithAI } from './services/textCleaningService';
 import { getLLMConfig } from './services/llmClient';
 import { hashText } from './utils/hash';
@@ -81,10 +77,7 @@ function App() {
   const [processingStep, setProcessingStep] = useState('');
   const [processingMeta, setProcessingMeta] = useState(null);
   const [currentView, setCurrentView] = useState(VIEW.EMPTY);
-  const [summaryDraft, setSummaryDraft] = useState('');
-  const [summaryNotice, setSummaryNotice] = useState('');
-  const [summaryError, setSummaryError] = useState('');
-  const [pendingImport, setPendingImport] = useState(null);
+
 
   // Async operation guard: prevents stale callbacks from updating state
   const asyncOperationIdRef = useRef(0);
@@ -195,56 +188,8 @@ function App() {
     ]);
   };
 
-  const parseSummary = (summaryText = '') => {
-    if (!summaryText) return { thesis: '', outline: [] };
-    const lines = summaryText.split(/\r?\n/);
-    let thesis = '';
-    const outline = [];
-    let inOutline = false;
-
-    for (const line of lines) {
-      const thesisMatch = line.match(/^THESIS:\s*(.+)$/i);
-      if (thesisMatch) {
-        thesis = thesisMatch[1].trim();
-        continue;
-      }
-
-      if (/^OUTLINE:\s*$/i.test(line.trim())) {
-        inOutline = true;
-        continue;
-      }
-
-      if (inOutline) {
-        const itemMatch = line.match(/^\s*\d+\.\s*(.+)$/);
-        if (itemMatch) {
-          outline.push(itemMatch[1].trim());
-        }
-      }
-    }
-
-    return { thesis, outline };
-  };
-
-  const extractThesisFromSummary = (summaryText = '') => {
-    const { thesis } = parseSummary(summaryText);
-    return thesis;
-  };
-
-  const validateSummary = (summaryText = '') => {
-    const { thesis, outline } = parseSummary(summaryText);
-    return { isValid: true, errors: [], thesis, outline };
-  };
-
-  const clearSummaryReview = () => {
-    setSummaryDraft('');
-    setSummaryNotice('');
-    setSummaryError('');
-    setPendingImport(null);
-  };
-
   const handleImportClose = () => {
     setShowImport(false);
-    clearSummaryReview();
     setProcessingMeta(null);
   };
 
@@ -425,142 +370,9 @@ function App() {
     await loadDocument(docId);
     setCurrentDocument(docId);
     setShowImport(false);
-    clearSummaryReview();
     setCurrentView(VIEW.LAYER0);
   };
 
-  const handleSummaryCancel = () => {
-    clearSummaryReview();
-    setProcessingLogs([]);
-    setProcessingStep('');
-    setProcessingMeta(null);
-  };
-
-  const handleSummaryConfirm = async (editedSummary) => {
-    if (!pendingImport) return;
-
-    // Cancel any in-flight requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const { signal } = controller;
-
-    const operationId = ++asyncOperationIdRef.current;
-    const { title, content, contentHash, model } = pendingImport;
-
-    setLoading(true);
-    setProcessingStep('CHUNKING');
-    markStepStart('CHUNKING');
-    addLog('Using edited summary to guide chunking...');
-
-    try {
-      const validation = validateSummary(editedSummary);
-      let coreThesis = validation.thesis || extractThesisFromSummary(editedSummary);
-      let semanticChunks = [];
-      const chunkingStart = Date.now();
-
-      if (coreThesis) {
-        addLog('Thesis extracted from edited summary', 'done');
-        semanticChunks = await chunkDocument(content, undefined, signal, editedSummary);
-      } else {
-        [coreThesis, semanticChunks] = await Promise.all([
-          generateCoreThesis(content, undefined, signal),
-          chunkDocument(content, undefined, signal, editedSummary)
-        ]);
-      }
-
-      if (operationId !== asyncOperationIdRef.current) return;
-      const chunkingMs = Date.now() - chunkingStart;
-      updateProcessingMeta(prev => ({
-        ...prev,
-        timings: {
-          ...prev.timings,
-          chunkingMs
-        }
-      }));
-      markStepComplete('CHUNKING', { ms: chunkingMs });
-
-      await persistImportResult({
-        title,
-        content,
-        coreThesis,
-        semanticChunks,
-        contentHash,
-        model,
-        summary: editedSummary,
-        cacheHit: false,
-        operationId
-      });
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('[AbortController] Import cancelled');
-        return;
-      }
-      if (operationId === asyncOperationIdRef.current) {
-        console.error('Import failed:', error);
-        alert(`Import failed: ${error.message}. Make sure LLM service is running.`);
-      }
-    } finally {
-      if (operationId === asyncOperationIdRef.current) {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleSummaryRegenerate = async () => {
-    if (!pendingImport) return;
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const { signal } = controller;
-
-    const operationId = ++asyncOperationIdRef.current;
-    const { content } = pendingImport;
-
-    setLoading(true);
-    setProcessingLogs([]);
-    setProcessingStep('SUMMARIZING');
-    markStepStart('SUMMARIZING');
-    addLog('Regenerating summary...', 'active');
-
-    try {
-      const summaryStart = Date.now();
-      const newSummary = await generateDocumentSummary(content, undefined, signal);
-      if (operationId !== asyncOperationIdRef.current) return;
-      const summaryMs = Date.now() - summaryStart;
-      updateProcessingMeta(prev => ({
-        ...prev,
-        timings: {
-          ...prev.timings,
-          summaryMs
-        }
-      }));
-      markStepComplete('SUMMARIZING', { ms: summaryMs });
-      setSummaryDraft(newSummary);
-      setSummaryNotice('Summary regenerated. You can edit before chunking.');
-      setSummaryError('');
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('[AbortController] Summary regeneration cancelled');
-        return;
-      }
-      if (operationId === asyncOperationIdRef.current) {
-        console.error('Summary regeneration failed:', error);
-        setSummaryError('Failed to regenerate summary. Please try again.');
-      }
-    } finally {
-      if (operationId === asyncOperationIdRef.current) {
-        setLoading(false);
-      }
-    }
-  };
 
   // Handle document import
   const handleImport = async ({ title, content: rawContent, parseMetrics, aiFormatEnabled = true }) => {
@@ -579,7 +391,6 @@ function App() {
     setLoading(true);
     setProcessingLogs([]);
     setProcessingStep('INITIALIZING');
-    clearSummaryReview();
     const { provider, model } = getLLMConfig();
     initProcessingMeta(content, provider, model, parseMetrics);
     markStepStart('INITIALIZING');
@@ -653,31 +464,45 @@ function App() {
           ...prev,
           cacheStatus: 'miss'
         }));
-        setProcessingStep('SUMMARIZING');
+        setProcessingStep('SUMMARIZING'); // Kept matching previous UI step
         markStepStart('SUMMARIZING');
-        addLog('Summarizing document to guide chunking...');
-        const summaryStart = Date.now();
-        documentSummary = await generateDocumentSummary(content, undefined, signal);
+        addLog('Analyzing document (summarizing and chunking)...', 'active');
+        const analyzeStart = Date.now();
+
+        const data = await bridgeClient.submitAnalysis({
+          content, title, cacheOnly: false, source: 'import-ui'
+        });
+
+        let bridgeResult = null;
+        if (data.status === 'cached' && data.result) {
+          bridgeResult = data.result;
+        } else {
+          const taskData = await bridgeClient.pollTaskStatus(data.taskId, {
+            intervalMs: 2000,
+            timeoutMs: 300000,
+            onProgress: (info) => {
+              if (info.status === 'processing') addLog('AI is processing...', 'active');
+            }
+          });
+          bridgeResult = taskData.data || taskData;
+        }
+
         if (operationId !== asyncOperationIdRef.current) return;
-        const summaryMs = Date.now() - summaryStart;
+        const analyzeMs = Date.now() - analyzeStart;
         updateProcessingMeta(prev => ({
           ...prev,
           timings: {
             ...prev.timings,
-            summaryMs
+            chunkingMs: analyzeMs
           }
         }));
-        markStepComplete('SUMMARIZING', { ms: summaryMs });
-        addLog('Summary ready', 'done');
+        markStepComplete('SUMMARIZING', { ms: analyzeMs });
+        markStepComplete('CHUNKING', { ms: 0 }); // Skip step
 
-        coreThesis = extractThesisFromSummary(documentSummary);
-        setSummaryDraft(documentSummary);
-        setSummaryNotice('You can review and edit the summary before chunking.');
-        setSummaryError('');
-        setPendingImport({ title, content, parseMetrics, contentHash, provider, model });
-        setShowImport(true);
-        setLoading(false);
-        return;
+        coreThesis = bridgeResult.coreThesis || '';
+        semanticChunks = bridgeResult.chunks || [];
+        documentSummary = bridgeResult.summary || '';
+        if (!semanticChunks.length) throw new Error("No chunks returned from analysis");
       }
 
       if (operationId !== asyncOperationIdRef.current) return;
@@ -929,16 +754,7 @@ function App() {
             processingStep={processingStep}
             processingMeta={processingMeta}
             processingSteps={IMPORT_STEPS}
-            summaryDraft={summaryDraft}
-            summaryNotice={summaryNotice}
-            summaryError={summaryError}
-            onSummaryChange={(value) => {
-              setSummaryDraft(value);
-              if (summaryError) setSummaryError('');
-            }}
-            onSummaryConfirm={handleSummaryConfirm}
-            onSummaryCancel={handleSummaryCancel}
-            onSummaryRegenerate={handleSummaryRegenerate}
+
           />
         </div>
       );
@@ -1042,16 +858,7 @@ function App() {
             processingStep={processingStep}
             processingMeta={processingMeta}
             processingSteps={IMPORT_STEPS}
-            summaryDraft={summaryDraft}
-            summaryNotice={summaryNotice}
-            summaryError={summaryError}
-            onSummaryChange={(value) => {
-              setSummaryDraft(value);
-              if (summaryError) setSummaryError('');
-            }}
-            onSummaryConfirm={handleSummaryConfirm}
-            onSummaryCancel={handleSummaryCancel}
-            onSummaryRegenerate={handleSummaryRegenerate}
+
           />
           <PWAPrompt />
           <OfflineIndicator />

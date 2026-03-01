@@ -7,12 +7,14 @@ import { hashText } from '../services/hashService.js';
 import * as cache from '../services/cacheManager.js';
 import * as queue from '../services/taskQueue.js';
 import { analyzeContent } from '../services/aiProcessor.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
 const MAX_CONTENT_LENGTH = 50_000;
 
-router.post('/analyze', async (req, res) => {
+router.post('/analyze', requireAuth, asyncHandler(async (req, res) => {
     const { content, title, cacheOnly = false, source = 'unknown' } = req.body;
 
     if (!content || typeof content !== 'string') {
@@ -25,7 +27,7 @@ router.post('/analyze', async (req, res) => {
     const contentHash = hashText(content);
 
     // Cache hit?
-    const cached = cache.get(contentHash);
+    const cached = await cache.get(contentHash);
     if (cached) {
         console.log(`[Content] Cache hit for ${contentHash.substring(0, 12)}...`);
         return res.json({
@@ -45,7 +47,7 @@ router.post('/analyze', async (req, res) => {
 
     // Process asynchronously (fire-and-forget)
     processTask(taskId, contentHash, content, title).catch(err => {
-        console.error(`[Content] Task ${taskId} failed:`, err.message);
+        console.error(`[Content:TaskError] Task ${taskId} failed unconditionally:`, err.stack || err.message);
     });
 
     res.status(202).json({
@@ -54,7 +56,7 @@ router.post('/analyze', async (req, res) => {
         status: 'queued',
         cacheHit: false
     });
-});
+}));
 
 async function processTask(taskId, hash, content, title) {
     queue.setProcessing(taskId);
@@ -66,12 +68,13 @@ async function processTask(taskId, hash, content, title) {
         result.title = title || inferTitle(content);
 
         // Store in cache
-        cache.set(hash, result);
+        await cache.set(hash, result);
 
         // Update task
         queue.setDone(taskId, { hash, ...result });
-        console.log(`[Content] Task ${taskId} done — ${result.chunks.length} chunks.`);
+        console.log(`[Content:TaskSuccess] Task ${taskId} done — ${result.chunks.length} chunks.`);
     } catch (err) {
+        console.error(`[Content:TaskFail] Task ${taskId} encountered error during analysis:`, err.stack || err.message);
         queue.setError(taskId, err);
         throw err;
     }

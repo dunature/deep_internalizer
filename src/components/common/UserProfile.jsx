@@ -41,10 +41,8 @@ export default function UserProfile({ onBack }) {
     const [showExportPreview, setShowExportPreview] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
     const [llmConfig, setLlmConfig] = useState({
-        provider: 'ollama',
-        baseUrl: 'http://localhost:11434',
-        model: 'llama3.1:latest',
-        apiKey: ''
+        provider: 'deepseek',
+        model: 'deepseek-chat'
     });
 
     useEffect(() => {
@@ -421,11 +419,9 @@ export default function UserProfile({ onBack }) {
         let newConfig = { ...llmConfig, provider };
 
         // Load defaults if switching to a known provider and currently empty or switching from local
-        if (provider === 'deepseek' && (!newConfig.baseUrl || newConfig.baseUrl.includes('localhost'))) {
-            newConfig.baseUrl = 'https://api.deepseek.com';
+        if (provider === 'deepseek' && newConfig.model === 'llama3.1:latest') {
             newConfig.model = 'deepseek-chat';
-        } else if (provider === 'ollama' && (!newConfig.baseUrl || newConfig.baseUrl.includes('deepseek'))) {
-            newConfig.baseUrl = 'http://localhost:11434';
+        } else if (provider === 'ollama' && newConfig.model === 'deepseek-chat') {
             newConfig.model = 'llama3.1:latest';
         }
 
@@ -559,18 +555,6 @@ export default function UserProfile({ onBack }) {
                     </div>
 
                     <div className={styles.field}>
-                        <label>Base URL</label>
-                        <input
-                            type="text"
-                            name="baseUrl"
-                            value={llmConfig.baseUrl}
-                            onChange={handleLlmConfigChange}
-                            placeholder="e.g. http://localhost:11434"
-                            className={styles.input}
-                        />
-                    </div>
-
-                    <div className={styles.field}>
                         <label>Model Name</label>
                         <input
                             type="text"
@@ -581,20 +565,6 @@ export default function UserProfile({ onBack }) {
                             className={styles.input}
                         />
                     </div>
-
-                    {llmConfig.provider !== 'ollama' && (
-                        <div className={styles.field}>
-                            <label>API Key</label>
-                            <input
-                                type="password"
-                                name="apiKey"
-                                value={llmConfig.apiKey}
-                                onChange={handleLlmConfigChange}
-                                placeholder="Enter your API key"
-                                className={styles.input}
-                            />
-                        </div>
-                    )}
                 </div>
                 <p className={styles.hint}>
                     Changes are saved automatically to your local browser storage.

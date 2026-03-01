@@ -5,6 +5,26 @@
 
 const tasks = new Map();
 
+const TASK_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
+const STUCK_TASK_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
+
+// Periodically clean up old tasks to prevent memory leaks
+setInterval(() => {
+    const now = Date.now();
+    for (const [taskId, task] of tasks.entries()) {
+        if (task.status === 'done' || task.status === 'error') {
+            if (now - task.updatedAt > TASK_EXPIRATION_MS) {
+                tasks.delete(taskId);
+            }
+        } else {
+            // Also clean up stuck tasks
+            if (now - task.updatedAt > STUCK_TASK_EXPIRATION_MS) {
+                tasks.delete(taskId);
+            }
+        }
+    }
+}, 60 * 1000).unref();
+
 export function create(taskId, hash, content, options = {}) {
     const task = {
         taskId,

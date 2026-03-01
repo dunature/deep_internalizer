@@ -471,6 +471,36 @@ MIT License —— 为个人成长和深度读写能力而设计。
 
 ---
 
+## 🔄 正在进行：代码重构计划
+
+**重构目标**：提升代码质量、消除技术债务、增强可维护性
+
+### Phase 1: 稳固后端底座 ✅ **已完成**
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| 激活 cacheManager cleanup | ✅ | 每日凌晨 2 点清理 30 天前缓存，防止磁盘占满 |
+| 细化全局错误分发 | ✅ | 错误响应携带 `code` 和 `isOperational` 元信息 |
+| 引入 Helmet 安全头 | ✅ | 自动添加 X-Content-Type-Options 等防御性 Headers |
+
+### Phase 2: 收敛双端逻辑 🚧 **进行中**
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| 移除双端重复 Prompt | ⏳ | 统一至 `bridge/services/aiProcessor.js` |
+| 增量化 Dexie version 定义 | ⏳ | 仅声明新增表，减少冗余 |
+
+### Phase 3: 拆解神级组件 📋 **计划中**
+
+| 任务 | 预计工时 | 说明 |
+|------|----------|------|
+| 提取 useDocumentImport Hook | 8h | 将 1064 行 App.jsx 中的导入逻辑抽离 |
+| 剥离视图状态路由 | 4h | App.jsx 仅负责视图路由 |
+
+详见：[RESTRUCTURE_PLAN.md](docs/RESTRUCTURE_PLAN.md)
+
+---
+
 ## 📚 更多资源
 
 - **[用户指南](docs/user-guide.md)**：详细步骤 + 截图
@@ -531,6 +561,17 @@ npm start
 ## 📜 许可证
 
 MIT License —— 为个人成长和深度读写能力而设计。
+
+---
+
+## 📚 更多资源
+
+- **[用户指南](docs/user-guide.md)**：详细步骤 + 截图
+- **[API 文档](docs/api.md)**：LLM prompt 模式、TTS 端点
+- **[研究论文](docs/research.md)**：认知科学基础
+- **[常见问题](docs/faq.md)**：常见问题与故障排除
+- **[重构计划](docs/RESTRUCTURE_PLAN.md)**：正在进行中的代码重构
+- **[Claude Code 集成](docs/claude-code-integration-complete.md)**：Bridge Server 与 Skill 设计
 
 ---
 

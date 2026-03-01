@@ -1,18 +1,13 @@
 /**
  * LLM Client
- * Supports local Ollama and remote DeepSeek / GLM (OpenAI-compatible)
+ * Proxies all requests to the Bridge Server to avoid exposing API keys in the frontend.
  */
 
 const DEFAULT_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'deepseek';
-
-const OLLAMA_BASE_URL = import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:latest';
-
-const DEEPSEEK_BASE_URL = import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-const DEEPSEEK_MODEL = import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat';
-
-const GLM_BASE_URL = import.meta.env.VITE_GLM_BASE_URL || 'https://api.z.ai/api/paas/v4';
-const GLM_MODEL = import.meta.env.VITE_GLM_MODEL || 'glm-4.7';
+// Default bridge server URL fallback
+const BRIDGE_SERVER_URL = import.meta.env.VITE_BRIDGE_SERVER_URL || 'http://localhost:3737';
+// Token used to authenticate with the Bridge Server
+const BRIDGE_API_KEY = import.meta.env.VITE_BRIDGE_API_KEY || 'your_secret_key_here';
 
 const STORAGE_KEY = 'deep-internalizer-llm-config';
 
@@ -31,30 +26,26 @@ export function getLLMConfig() {
         }
     }
 
-    // Fallback to environment variables
+    // Fallback to default configs for UI (The backend uses its own .env for the actual provider logic)
     const provider = DEFAULT_PROVIDER.toLowerCase();
+
+    // We only need to store the provider/model string for the UI state
     if (provider === 'deepseek') {
         return {
             provider,
-            baseUrl: normalizeBaseUrl(DEEPSEEK_BASE_URL),
-            model: DEEPSEEK_MODEL,
-            apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || ''
+            model: 'deepseek-chat'
         };
     }
     if (provider === 'glm') {
         return {
             provider,
-            baseUrl: normalizeBaseUrl(GLM_BASE_URL),
-            model: GLM_MODEL,
-            apiKey: import.meta.env.VITE_GLM_API_KEY || ''
+            model: 'glm-4.7'
         };
     }
 
     return {
         provider: 'ollama',
-        baseUrl: normalizeBaseUrl(OLLAMA_BASE_URL),
-        model: OLLAMA_MODEL,
-        apiKey: ''
+        model: 'llama3.1:latest'
     };
 }
 
@@ -62,47 +53,24 @@ export function saveLLMConfig(config) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
-async function callOllama({ baseUrl, model, prompt, temperature = 0.3, maxTokens = 2048, signal }) {
-    const response = await fetch(`${baseUrl}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model,
-            prompt,
-            stream: false,
-            options: {
-                temperature,
-                num_predict: maxTokens
-            }
-        }),
-        signal
-    });
+/**
+ * Calls the backend Bridge Server proxy to process the LLM request.
+ */
+async function callBridgeProxy({ system, user, temperature = 0.3, maxTokens = 2048, signal, model }) {
+    const url = `${normalizeBaseUrl(BRIDGE_SERVER_URL)}/api/llm/chat`;
 
-    if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.response;
-}
-
-async function callOpenAICompatible({ baseUrl, apiKey, model, messages, temperature = 0.3, maxTokens = 2048, signal }) {
-    if (!apiKey) {
-        throw new Error('Missing API key for remote LLM provider');
-    }
-
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`
+            'Authorization': `Bearer ${BRIDGE_API_KEY}`
         },
         body: JSON.stringify({
             model,
-            messages,
+            system,
+            user,
             temperature,
-            max_tokens: maxTokens,
-            stream: false
+            maxTokens
         }),
         signal
     });
@@ -110,16 +78,14 @@ async function callOpenAICompatible({ baseUrl, apiKey, model, messages, temperat
     const data = await response.json();
 
     if (!response.ok) {
-        const message = data?.error?.message || `LLM API error: ${response.status}`;
-        throw new Error(message);
+        throw new Error(data?.error || `Bridge API error: ${response.status}`);
     }
 
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-        throw new Error('LLM returned empty content');
+    if (!data.content) {
+        throw new Error('Bridge returned empty content');
     }
 
-    return content;
+    return data.content;
 }
 
 export async function callLLM({
@@ -133,32 +99,13 @@ export async function callLLM({
     const config = getLLMConfig();
     const resolvedModel = model || config.model;
 
-    if (config.provider === 'ollama') {
-        const prompt = system ? `${system}\n\n${user}` : user;
-        return callOllama({
-            baseUrl: config.baseUrl,
-            model: resolvedModel,
-            prompt,
-            temperature,
-            maxTokens,
-            signal
-        });
-    }
-
-    const messages = system
-        ? [
-            { role: 'system', content: system },
-            { role: 'user', content: user }
-        ]
-        : [{ role: 'user', content: user }];
-
-    return callOpenAICompatible({
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey,
-        model: resolvedModel,
-        messages,
+    // Send the configured model preference to the Bridge (the bridge may override it if forced)
+    return callBridgeProxy({
+        system,
+        user,
         temperature,
         maxTokens,
-        signal
+        signal,
+        model: resolvedModel
     });
 }

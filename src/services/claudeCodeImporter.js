@@ -14,9 +14,7 @@ import {
   getDocumentWithChunks
 } from '../db/schema';
 import { hashText } from '../utils/hash';
-
-// Bridge Server base URL
-const BRIDGE_BASE_URL = import.meta.env.VITE_BRIDGE_SERVER_URL || 'http://localhost:3737';
+import bridgeClient from '../api/bridgeClient';
 
 /**
  * Analysis result structure from Bridge Server
@@ -57,13 +55,9 @@ export async function checkContentCache(content) {
 
   // Layer 2: Check Bridge Server
   try {
-    const response = await fetch(`${BRIDGE_BASE_URL}/api/cache/${contentHash}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const bridgeCache = await bridgeClient.getCache(contentHash);
 
-    if (response.ok) {
-      const bridgeCache = await response.json();
+    if (bridgeCache) {
       console.log('[ClaudeCodeImporter] Bridge cache hit:', contentHash.substring(0, 12));
       return {
         cached: true,
@@ -99,24 +93,14 @@ export async function checkContentCache(content) {
  */
 export async function submitForAnalysis({ content, title, url, cacheOnly = false, source = 'claude-code' }) {
   try {
-    const response = await fetch(`${BRIDGE_BASE_URL}/api/content/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content,
-        title,
-        cacheOnly,
-        source,
-        url
-      })
+    const data = await bridgeClient.submitAnalysis({
+      content,
+      title,
+      cacheOnly,
+      source,
+      url
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Bridge Server error: ${error}`);
-    }
-
-    const data = await response.json();
     return {
       taskId: data.taskId,
       status: data.status,
@@ -140,70 +124,19 @@ export async function submitForAnalysis({ content, title, url, cacheOnly = false
  * @returns {Promise<ClaudeCodeAnalysisResult>}
  */
 export async function pollTaskStatus(taskId, { intervalMs = 3000, timeoutMs = 60000, onProgress } = {}) {
-  const startTime = Date.now();
-  const maxRetries = Math.ceil(timeoutMs / intervalMs);
-  let retryCount = 0;
+  const data = await bridgeClient.pollTaskStatus(taskId, {
+    intervalMs,
+    timeoutMs,
+    onProgress
+  });
 
-  while (Date.now() - startTime < timeoutMs) {
-    try {
-      const response = await fetch(`${BRIDGE_BASE_URL}/api/tasks/${taskId}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Task status error: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (onProgress) {
-        onProgress({ status: data.status, taskId });
-      }
-
-      if (data.status === 'done') {
-        return new ClaudeCodeAnalysisResult({
-          taskId,
-          contentHash: data.contentHash,
-          status: 'done',
-          result: data.result,
-          source: 'bridge'
-        });
-      }
-
-      if (data.status === 'error') {
-        throw new Error(data.error || 'Task failed');
-      }
-
-      // Still processing, wait and retry
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
-    } catch (error) {
-      retryCount++;
-
-      // Log all errors with retry count
-      console.warn(
-        `[ClaudeCodeImporter] Polling error (${retryCount}/${maxRetries}):`,
-        error.message
-      );
-
-      // Throw error if it's a task failure or max retries reached
-      if (error.message.includes('failed') || error.message.includes('error')) {
-        throw error;
-      }
-
-      if (retryCount >= maxRetries) {
-        throw new Error(
-          `Task ${taskId} polling failed after ${maxRetries} attempts: ${error.message}`
-        );
-      }
-
-      // Exponential backoff: intervalMs * retryCount, capped at 15s
-      const backoffDelay = Math.min(intervalMs * retryCount, 15000);
-      await new Promise(resolve => setTimeout(resolve, backoffDelay));
-    }
-  }
-
-  throw new Error(`Task ${taskId} timed out after ${timeoutMs}ms`);
+  return new ClaudeCodeAnalysisResult({
+    taskId,
+    contentHash: data.contentHash,
+    status: 'done',
+    result: data.result,
+    source: 'bridge'
+  });
 }
 
 /**
@@ -358,28 +291,7 @@ export async function completeImportFlow({ content, title, url, useCache = true,
  * @returns {Promise<{healthy: boolean, url: string}>}
  */
 export async function checkBridgeHealth() {
-  try {
-    const response = await fetch(`${BRIDGE_BASE_URL}/api/health`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        healthy: true,
-        url: BRIDGE_BASE_URL,
-        uptime: data.uptime
-      };
-    }
-  } catch (error) {
-    console.warn('[ClaudeCodeImporter] Bridge health check failed:', error.message);
-  }
-
-  return {
-    healthy: false,
-    url: BRIDGE_BASE_URL
-  };
+  return bridgeClient.checkHealth();
 }
 
 export default {

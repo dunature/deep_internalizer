@@ -22,6 +22,24 @@ class TTSService {
         // Track in-flight requests to prevent duplicates
         this.inFlightRequests = new Map();
         this.inFlightPrefetch = new Map();
+        this.insertCount = 0;
+        this.activeUrls = new Map();
+    }
+
+    _createAndTrackUrl(key, blob) {
+        if (this.activeUrls.has(key)) {
+            return this.activeUrls.get(key);
+        }
+        const url = URL.createObjectURL(blob);
+        this.activeUrls.set(key, url);
+
+        // Prevent infinite growth
+        if (this.activeUrls.size > 200) {
+            const oldestKey = this.activeUrls.keys().next().value;
+            URL.revokeObjectURL(this.activeUrls.get(oldestKey));
+            this.activeUrls.delete(oldestKey);
+        }
+        return url;
     }
 
     /**
@@ -58,7 +76,7 @@ class TTSService {
             const cached = await db.wordAudio.get(cacheKey);
             if (cached) {
                 console.log(`[TTS] Cache hit: "${word}"`);
-                return URL.createObjectURL(cached.blob);
+                return this._createAndTrackUrl(cacheKey, cached.blob);
             }
 
             // 2. Check if request is already in-flight
@@ -73,7 +91,7 @@ class TTSService {
                 await this.inFlightPrefetch.get(cacheKey);
                 const prefetched = await db.wordAudio.get(cacheKey);
                 if (prefetched) {
-                    return URL.createObjectURL(prefetched.blob);
+                    return this._createAndTrackUrl(cacheKey, prefetched.blob);
                 }
             }
 
@@ -110,7 +128,7 @@ class TTSService {
         // Trigger cache cleanup if needed (non-blocking)
         this._cleanupCacheIfNeeded();
 
-        return URL.createObjectURL(blob);
+        return this._createAndTrackUrl(word, blob);
     }
 
     async _fetchAndCacheWordBlob(word, voice) {
@@ -169,7 +187,7 @@ class TTSService {
             const cached = await db.syllableAudio.get(text);
             if (cached) {
                 console.log(`[TTS] Syllable cache hit: "${text}"`);
-                return URL.createObjectURL(cached.blob);
+                return this._createAndTrackUrl(`syllable:${text}`, cached.blob);
             }
 
             // Check in-flight
@@ -186,7 +204,7 @@ class TTSService {
                     blob: blob,
                     createdAt: Date.now()
                 });
-                return URL.createObjectURL(blob);
+                return this._createAndTrackUrl(`syllable:${text}`, blob);
             })();
 
             this.inFlightRequests.set(inFlightKey, promise);
@@ -199,7 +217,7 @@ class TTSService {
 
         // Not a common syllable - don't cache
         const blob = await this.fetchFromServer(text, 'default', speed);
-        return URL.createObjectURL(blob);
+        return this._createAndTrackUrl(`syllable:${text}`, blob);
     }
 
     /**
@@ -208,7 +226,7 @@ class TTSService {
     async speakSentence(sentence, voice = 'default') {
         console.log(`[TTS] Sentence (no cache): "${sentence.substring(0, 30)}..."`);
         const blob = await this.fetchFromServer(sentence, voice);
-        return URL.createObjectURL(blob);
+        return this._createAndTrackUrl(`sentence:${sentence}`, blob);
     }
 
     /**
@@ -227,6 +245,10 @@ class TTSService {
      * LRU cleanup: keep only MAX_WORD_CACHE_SIZE entries
      */
     async _cleanupCacheIfNeeded() {
+        this.insertCount++;
+        if (this.insertCount < 20) return;
+        this.insertCount = 0;
+
         try {
             const count = await db.wordAudio.count();
             if (count > MAX_WORD_CACHE_SIZE) {

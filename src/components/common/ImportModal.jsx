@@ -21,13 +21,7 @@ export default function ImportModal({
     processingStep,
     processingMeta,
     processingSteps,
-    summaryDraft,
-    summaryNotice,
-    summaryError,
-    onSummaryChange,
-    onSummaryConfirm,
-    onSummaryCancel,
-    onSummaryRegenerate
+
 }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -160,11 +154,9 @@ export default function ImportModal({
         const provider = e.target.value;
         let updated = { ...llmConfig, provider };
 
-        if (provider === 'deepseek' && (!updated.baseUrl || updated.baseUrl.includes('localhost'))) {
-            updated.baseUrl = 'https://api.deepseek.com';
+        if (provider === 'deepseek' && updated.model === 'llama3.1:latest') {
             updated.model = 'deepseek-chat';
-        } else if (provider === 'ollama' && (!updated.baseUrl || !updated.baseUrl.includes('localhost'))) {
-            updated.baseUrl = 'http://localhost:11434';
+        } else if (provider === 'ollama' && updated.model === 'deepseek-chat') {
             updated.model = 'llama3.1:latest';
         }
 
@@ -333,7 +325,7 @@ export default function ImportModal({
     };
 
     if (!isOpen) return null;
-    const isSummaryReview = Boolean(summaryDraft);
+
 
     return (
         <div className="overlay" onClick={handleClose}>
@@ -356,50 +348,6 @@ export default function ImportModal({
                             meta={processingMeta}
                             steps={processingSteps}
                         />
-                    </div>
-                ) : isSummaryReview ? (
-                    <div className={styles.summaryContainer}>
-                        <header className={styles.summaryHeader}>
-                            <h2>Review Summary</h2>
-                            <p className={styles.summaryHint}>
-                                Please keep the <strong>THESIS</strong> and <strong>OUTLINE</strong> headings.
-                            </p>
-                            {summaryNotice && (
-                                <p className={styles.summaryNotice}>{summaryNotice}</p>
-                            )}
-                            {summaryError && (
-                                <p className={styles.summaryError}>{summaryError}</p>
-                            )}
-                        </header>
-                        <textarea
-                            className={styles.summaryTextarea}
-                            value={summaryDraft}
-                            onChange={(e) => onSummaryChange?.(e.target.value)}
-                            rows={10}
-                        />
-                        <div className={styles.summaryActions}>
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={onSummaryCancel}
-                            >
-                                Back to Edit
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                onClick={onSummaryRegenerate}
-                            >
-                                Regenerate Summary
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={() => onSummaryConfirm?.(summaryDraft)}
-                            >
-                                Continue to Chunking
-                            </button>
-                        </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className={styles.form}>
@@ -517,32 +465,6 @@ export default function ImportModal({
                                         disabled={isLoading || isParsing}
                                     />
                                 </div>
-                                <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
-                                    <label>Base URL</label>
-                                    <input
-                                        type="text"
-                                        name="baseUrl"
-                                        value={llmConfig.baseUrl}
-                                        onChange={handleLlmFieldChange}
-                                        placeholder="e.g. https://api.deepseek.com"
-                                        className={styles.input}
-                                        disabled={isLoading || isParsing}
-                                    />
-                                </div>
-                                {llmConfig.provider !== 'ollama' && (
-                                    <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
-                                        <label>API Key</label>
-                                        <input
-                                            type="password"
-                                            name="apiKey"
-                                            value={llmConfig.apiKey}
-                                            onChange={handleLlmFieldChange}
-                                            placeholder="Enter your API key"
-                                            className={styles.input}
-                                            disabled={isLoading || isParsing}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         </details>
 

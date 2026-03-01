@@ -42,76 +42,11 @@ db.version(3).stores({
 });
 
 db.version(4).stores({
-  // Documents: imported articles/texts
-  documents: 'id, title, importedAt, lastAccessedAt',
-
-  // Chunks: semantic segments of documents
-  chunks: 'id, docId, index, completed',
-
-  // Words: vocabulary items extracted from chunks
-  words: 'id, chunkId, text, status, addedAt',
-
-  // Review records: history of word reviews
-  reviewRecords: 'id, wordId, action, reviewedAt',
-
-  // Reading sessions: state persistence for resume
-  readingSessions: 'docId',
-
-  // User stats: daily progress for heatmap
-  userStats: 'date',
-
-  // === CACHING TABLES ===
-  // Word audio cache (TTS)
-  wordAudio: 'word, createdAt',
-
-  // Syllable audio cache (common syllables only)
-  syllableAudio: 'syllable, createdAt',
-
-  // LLM response cache for keywords
-  chunkKeywords: 'chunkId',
-
-  // Sentence translations cache
-  sentenceTranslations: 'chunkId',
-
   // Document analysis cache (core thesis + chunks)
   analysisCache: 'hash, createdAt'
 });
 
 db.version(6).stores({
-  // Documents: imported articles/texts
-  documents: 'id, title, importedAt, lastAccessedAt',
-
-  // Chunks: semantic segments of documents
-  chunks: 'id, docId, index, completed',
-
-  // Words: vocabulary items extracted from chunks
-  words: 'id, chunkId, text, status, addedAt',
-
-  // Review records: history of word reviews
-  reviewRecords: 'id, wordId, action, reviewedAt',
-
-  // Reading sessions: state persistence for resume
-  readingSessions: 'docId',
-
-  // User stats: daily progress for heatmap
-  userStats: 'date',
-
-  // === CACHING TABLES ===
-  // Word audio cache (TTS)
-  wordAudio: 'word, createdAt',
-
-  // Syllable audio cache (common syllables only)
-  syllableAudio: 'syllable, createdAt',
-
-  // LLM response cache for keywords
-  chunkKeywords: 'chunkId',
-
-  // Sentence translations cache
-  sentenceTranslations: 'chunkId',
-
-  // Document analysis cache (core thesis + chunks)
-  analysisCache: 'hash, createdAt',
-
   // Thought groups cache for sentences
   thoughtGroups: 'hash, createdAt',
 
@@ -323,6 +258,8 @@ export async function getAnalysisCache(hash) {
   return await db.analysisCache.get(hash);
 }
 
+let analysisCacheInsertCount = 0;
+
 export async function setAnalysisCache(hash, coreThesis, chunks, model = '', summary = '') {
   if (!hash) return;
   await db.analysisCache.put({
@@ -333,6 +270,10 @@ export async function setAnalysisCache(hash, coreThesis, chunks, model = '', sum
     model,
     createdAt: Date.now()
   });
+
+  analysisCacheInsertCount++;
+  if (analysisCacheInsertCount < 5) return;
+  analysisCacheInsertCount = 0;
 
   try {
     const count = await db.analysisCache.count();
@@ -354,6 +295,8 @@ export async function getThoughtGroupsCache(hash) {
   return await db.thoughtGroups.get(hash);
 }
 
+let thoughtGroupInsertCount = 0;
+
 export async function setThoughtGroupsCache(hash, groups, model = '') {
   if (!hash) return;
   await db.thoughtGroups.put({
@@ -362,6 +305,10 @@ export async function setThoughtGroupsCache(hash, groups, model = '') {
     model,
     createdAt: Date.now()
   });
+
+  thoughtGroupInsertCount++;
+  if (thoughtGroupInsertCount < 10) return;
+  thoughtGroupInsertCount = 0;
 
   try {
     const count = await db.thoughtGroups.count();
@@ -392,6 +339,8 @@ export async function getClaudeCodeCache(hash) {
   return await db.claudeCodeCache.get(hash);
 }
 
+let claudeCodeInsertCount = 0;
+
 /**
  * Set Claude Code cache entry
  * @param {string} hash - Content hash
@@ -413,6 +362,10 @@ export async function setClaudeCodeCache(hash, { taskId, source, result, title, 
     url,
     createdAt: Date.now()
   });
+
+  claudeCodeInsertCount++;
+  if (claudeCodeInsertCount < 5) return;
+  claudeCodeInsertCount = 0;
 
   try {
     const count = await db.claudeCodeCache.count();

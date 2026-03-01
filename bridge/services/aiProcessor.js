@@ -62,7 +62,7 @@ function tokenizeSentences(text) {
 
 // ── LLM Call ───────────────────────────────────────────────────
 
-async function callLLM({ system, user, temperature = 0.3, maxTokens = 2048 }) {
+export async function callLLM({ system, user, temperature = 0.3, maxTokens = 2048 }) {
     if (LLM_PROVIDER === 'ollama') {
         const prompt = system ? `${system}\n\n${user}` : user;
         const res = await fetch(`${LLM_BASE_URL}/api/generate`, {

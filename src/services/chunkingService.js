@@ -7,52 +7,8 @@ import { getThoughtGroupsCache, setThoughtGroupsCache } from '../db/schema';
 import { hashText } from '../utils/hash';
 import { callLLM, getLLMConfig } from './llmClient';
 
-// System prompt for semantic chunking
-const CHUNKING_SYSTEM_PROMPT = `You are a reading comprehension assistant specializing in English text analysis.
-Your task is to divide the given text into logical thematic chunks for deep reading.
-Use the provided THESIS and OUTLINE to align chunk boundaries with the document's major ideas.
-
-For each chunk, provide:
-1. A short title (3-5 words, captures the main idea)
-2. A 2-sentence summary in English
-3. A 1-sentence summary in Chinese (summary_zh)
-4. The exact start and end sentence indices (0-indexed)
-
-Output ONLY valid JSON array, no other text:
-[
-  {
-    "title": "The Problem Statement",
-    "summary": "The author introduces the core challenge. They argue that current approaches fall short.",
-    "summary_zh": "作者介绍了核心挑战，并认为现有方法存在不足。",
-    "startIndex": 0,
-    "endIndex": 4
-  }
-]
-
-Rules:
-- Each chunk should contain 3-8 sentences for optimal learning
-- Chunks must follow the logical flow of the argument
-- Identify transitions between ideas as natural chunk boundaries
-- Do not overlap chunks`;
-
-// System prompt for document summary (used to guide chunking)
-const DOCUMENT_SUMMARY_PROMPT = `You are a professional reading analyst.
-Create a structured summary that will guide semantic chunking.
-
-Output format (plain text only, exact headings):
-THESIS: <one sentence, max 30 words>
-OUTLINE:
-1. <12-20 words, major idea or transition>
-2. <12-20 words, major idea or transition>
-3. <12-20 words, major idea or transition>
-4. <12-20 words, major idea or transition>
-5. <optional if needed>
-6. <optional if needed>
-
-Rules:
-- Use 4-6 outline points.
-- Each outline point should map to a logical chunk boundary.
-- Keep it concise and concrete. Do not add extra commentary.`;
+// Note: CHUNKING_SYSTEM_PROMPT and DOCUMENT_SUMMARY_PROMPT have been moved to bridge/services/aiProcessor.js
+// to enforce a Single Source of Truth for document analysis prompts.
 
 // System prompt for keyword extraction
 const KEYWORD_EXTRACTION_PROMPT = `You are a vocabulary extraction assistant for English learners.
@@ -161,67 +117,11 @@ function parseJsonResponse(response) {
  * @param {AbortSignal} signal - Optional AbortSignal for cancellation
  */
 export async function generateDocumentSummary(text, model, signal = null) {
-    const resolvedModel = model || getLLMConfig().model;
-    const user = `Text:
-${text.substring(0, 6000)}`;
-
-    console.log('[DEBUG] Generating document summary...');
-    const response = await callProviderLLM({
-        system: DOCUMENT_SUMMARY_PROMPT,
-        user,
-        model: resolvedModel,
-        signal,
-        maxTokens: 512
-    });
-    console.log('[DEBUG] Summary response received:', response.substring(0, 100) + '...');
-    return response.trim();
+    throw new Error('generateDocumentSummary is deprecated in chunkingService.js. Use bridgeClient.analyzeContent instead.');
 }
 
 export async function chunkDocument(text, model, signal = null, documentSummary = '') {
-    const resolvedModel = model || getLLMConfig().model;
-    const sentences = tokenizeSentences(text);
-
-    if (sentences.length === 0) {
-        throw new Error('No sentences found in text');
-    }
-
-    // For very short texts, return as single chunk
-    if (sentences.length <= 5) {
-        return [{
-            title: 'Complete Text',
-            summary: sentences.slice(0, 2).join(' '),
-            startIndex: 0,
-            endIndex: sentences.length - 1,
-            originalText: text
-        }];
-    }
-
-    const summaryBlock = documentSummary ? `Document summary (for guidance):
-${documentSummary}
-
-` : '';
-
-    const user = `${summaryBlock}Text to analyze (${sentences.length} sentences):
-${text}`;
-
-    console.log('[DEBUG] Calling chunkDocument LLM...');
-    const response = await callProviderLLM({
-        system: CHUNKING_SYSTEM_PROMPT,
-        user,
-        model: resolvedModel,
-        signal
-    });
-    console.log('[DEBUG] Chunking response received:', response.substring(0, 100) + '...');
-    const chunks = parseJsonResponse(response);
-    console.log(`[DEBUG] Parsed ${chunks.length} chunks.`);
-
-    // Enrich chunks with original text
-    return chunks.map(chunk => ({
-        ...chunk,
-        originalText: sentences
-            .slice(chunk.startIndex, chunk.endIndex + 1)
-            .join(' ')
-    }));
+    throw new Error('chunkDocument is deprecated in chunkingService.js. Use bridgeClient.analyzeContent instead.');
 }
 
 /**
@@ -340,21 +240,7 @@ ${sentence}`;
  * @param {AbortSignal} signal - Optional AbortSignal for cancellation
  */
 export async function generateCoreThesis(text, model, signal = null) {
-    const resolvedModel = model || getLLMConfig().model;
-    const system = `Summarize the core thesis of this text in ONE sentence (max 30 words).
-Focus on the main argument or central idea.
-Output ONLY the thesis statement, nothing else.
-`;
-    const user = `Text:
-${text.substring(0, 2000)}`; // Limit input length
-
-    const response = await callProviderLLM({
-        system,
-        user,
-        model: resolvedModel,
-        signal
-    });
-    return response.trim();
+    throw new Error('generateCoreThesis is deprecated in chunkingService.js. Use bridgeClient.analyzeContent instead.');
 }
 
 /**
