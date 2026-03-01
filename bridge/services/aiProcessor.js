@@ -244,20 +244,20 @@ export async function analyzeContent(text) {
 
     console.log(`[AI] Chunking complete: ${chunks.length} chunks.`);
 
-    // Step 4: Extract vocabulary for each chunk (parallel processing)
+    // Step 4: Extract vocabulary for each chunk (sequential processing to avoid overwhelming Ollama)
     console.log('[AI] Extracting vocabulary for each chunk...');
-    const chunkWithVocab = await Promise.all(
-        chunks.map(async (chunk, index) => {
-            try {
-                const vocab = await extractVocabulary(chunk.originalText);
-                console.log(`[AI] Chunk ${index + 1}: extracted ${vocab.length} words`);
-                return { ...chunk, vocabulary: vocab };
-            } catch (err) {
-                console.warn(`[AI] Vocabulary extraction failed for chunk ${index + 1}:`, err.message);
-                return { ...chunk, vocabulary: [] };
-            }
-        })
-    );
+    const chunkWithVocab = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        try {
+            const vocab = await extractVocabulary(chunk.originalText);
+            console.log(`[AI] Chunk ${i + 1}: extracted ${vocab.length} words`);
+            chunkWithVocab.push({ ...chunk, vocabulary: vocab });
+        } catch (err) {
+            console.warn(`[AI] Vocabulary extraction failed for chunk ${i + 1}:`, err.message);
+            chunkWithVocab.push({ ...chunk, vocabulary: [] });
+        }
+    }
 
     console.log(`[AI] Vocabulary extraction complete for ${chunkWithVocab.length} chunks.`);
 
@@ -277,14 +277,21 @@ export async function analyzeContent(text) {
 export async function extractVocabulary(text) {
     if (!text || text.trim().length === 0) return [];
 
-    const response = await callLLM({
-        system: VOCABULARY_EXTRACTION_PROMPT,
-        user: `Paragraph:\n${text.substring(0, 1500)}`,
-        temperature: 0.3,
-        maxTokens: 2048
-    });
+    // Use smaller model for faster vocabulary extraction
+    const savedModel = process.env.LLM_MODEL;
+    process.env.LLM_MODEL = 'qwen3:4b';
 
-    return parseJsonResponse(response);
+    try {
+        const response = await callLLM({
+            system: VOCABULARY_EXTRACTION_PROMPT,
+            user: `Paragraph:\n${text.substring(0, 1000)}`,
+            temperature: 0.3,
+            maxTokens: 1500
+        });
+        return parseJsonResponse(response);
+    } finally {
+        if (savedModel) process.env.LLM_MODEL = savedModel;
+    }
 }
 
 export default { analyzeContent };
