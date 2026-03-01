@@ -62,6 +62,36 @@ OUTLINE:
 - <main point 2>
 - <main point 3> (up to 6 points)`;
 
+const VOCABULARY_EXTRACTION_PROMPT = `You are a vocabulary extraction expert for English learners.
+For EACH paragraph/chunk provided, extract 8-12 key vocabulary words that are:
+1. Domain-specific or technical terms
+2. Advanced vocabulary (CEFR B2+ level and above)
+3. Words crucial to understanding the text's argument
+4. Words that might be unfamiliar to intermediate English learners
+
+For EACH word, provide ONLY:
+- word: the word itself (lowercase)
+- phonetic: IPA phonetic transcription in slashes (e.g., /ˈæɡrɪɡeɪt/)
+- pos: part of speech abbreviation (n., v., adj., adv., phr.)
+- definition: concise English definition (max 15 words)
+- definition_zh: concise Chinese definition (max 10 characters)
+- sentence: the exact original sentence where the word appears
+
+Output format: ONLY valid JSON array, no markdown, no explanation.
+Example:
+[
+  {
+    "word": "paralyzing",
+    "phonetic": "/ˈpærəlaɪzɪŋ/",
+    "pos": "adj.",
+    "definition": "making unable to think or act",
+    "definition_zh": "使瘫痪的",
+    "sentence": "Fear of the unknown is one of the most paralyzing reactions."
+  }
+]
+
+IMPORTANT: Extract 8-12 words per chunk. Return ONLY the JSON array.`;
+
 // ── Sentence tokenizer ─────────────────────────────────────────
 
 function tokenizeSentences(text) {
@@ -124,13 +154,29 @@ function parseJsonResponse(response) {
     let cleaned = response.trim();
     // Strip markdown code fences
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+
+    // Try to extract JSON array from messy response
+    const start = cleaned.indexOf('[');
+    const end = cleaned.lastIndexOf(']');
+
+    if (start === -1 || end === -1 || start >= end) {
+        throw new Error('No valid JSON array found in response');
+    }
+
+    cleaned = cleaned.substring(start, end + 1);
+
     try {
         return JSON.parse(cleaned);
     } catch (e) {
-        // Try to extract JSON array from messy response
-        const match = cleaned.match(/\[[\s\S]*\]/);
-        if (match) return JSON.parse(match[0]);
-        throw new Error(`Failed to parse LLM JSON: ${e.message}`);
+        // Try to fix common JSON issues (unquoted keys, single quotes, etc.)
+        try {
+            const fixed = cleaned
+                .replace(/'/g, '"')  // Replace single quotes with double quotes
+                .replace(/(\w+):/g, '"$1":');  // Quote unquoted keys
+            return JSON.parse(fixed);
+        } catch (e2) {
+            throw new Error(`Failed to parse LLM JSON: ${e.message}. Raw: ${cleaned.substring(0, 200)}...`);
+        }
     }
 }
 
@@ -198,12 +244,47 @@ export async function analyzeContent(text) {
 
     console.log(`[AI] Chunking complete: ${chunks.length} chunks.`);
 
+    // Step 4: Extract vocabulary for each chunk (parallel processing)
+    console.log('[AI] Extracting vocabulary for each chunk...');
+    const chunkWithVocab = await Promise.all(
+        chunks.map(async (chunk, index) => {
+            try {
+                const vocab = await extractVocabulary(chunk.originalText);
+                console.log(`[AI] Chunk ${index + 1}: extracted ${vocab.length} words`);
+                return { ...chunk, vocabulary: vocab };
+            } catch (err) {
+                console.warn(`[AI] Vocabulary extraction failed for chunk ${index + 1}:`, err.message);
+                return { ...chunk, vocabulary: [] };
+            }
+        })
+    );
+
+    console.log(`[AI] Vocabulary extraction complete for ${chunkWithVocab.length} chunks.`);
+
     return {
         coreThesis: coreThesis.trim(),
         summary,
         model: `${LLM_PROVIDER}/${LLM_MODEL}`,
-        chunks
+        chunks: chunkWithVocab
     };
+}
+
+/**
+ * Extract vocabulary from a text chunk
+ * @param {string} text - The text to extract vocabulary from
+ * @returns {Promise<Array>} Array of vocabulary items
+ */
+export async function extractVocabulary(text) {
+    if (!text || text.trim().length === 0) return [];
+
+    const response = await callLLM({
+        system: VOCABULARY_EXTRACTION_PROMPT,
+        user: `Paragraph:\n${text.substring(0, 1500)}`,
+        temperature: 0.3,
+        maxTokens: 2048
+    });
+
+    return parseJsonResponse(response);
 }
 
 export default { analyzeContent };
