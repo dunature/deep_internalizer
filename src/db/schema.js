@@ -47,10 +47,12 @@ db.version(4).stores({
 });
 
 db.version(6).stores({
-  // Thought groups cache for sentences
-  thoughtGroups: 'hash, createdAt',
+  // Thought groups cache for sentences (NEW in v6)
+  thoughtGroups: 'hash, createdAt'
+});
 
-  // Claude Code cache (extended fields for Claude Code Skill integration)
+db.version(7).stores({
+  // Claude Code cache (NEW in v7 - extends claude-code-skill integration)
   claudeCodeCache: 'hash, taskId, source, createdAt'
 });
 

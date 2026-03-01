@@ -1,8 +1,20 @@
 /**
  * AI Processor — Node.js version
  *
- * Replicates the prompt logic from the frontend `chunkingService.js`
- * but calls the LLM via Node.js HTTP (no import.meta.env dependency).
+ * PRIMARY DOCUMENT ANALYSIS SERVICE
+ *
+ * This is the Single Source of Truth for all document-level analysis prompts:
+ * - CHUNKING_SYSTEM_PROMPT (semantic chunking)
+ * - CORE_THESIS_PROMPT (core thesis extraction)
+ * - DOCUMENT_SUMMARY_PROMPT (document summary for chunking guidance)
+ *
+ * The frontend chunkingService.js has been deprecated for document-level analysis
+ * and should only be used for:
+ * - Vocabulary extraction (extractKeywords)
+ * - Thought group splitting (splitSentenceIntoGroups)
+ * - Sentence translation (translateSentences)
+ *
+ * @see {@link https://github.com/dunature/deep_internalizer/blob/main/docs/RESTRUCTURE_PLAN.md}
  */
 import 'dotenv/config';
 

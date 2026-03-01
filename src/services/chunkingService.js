@@ -1,6 +1,22 @@
 /**
  * Deep Internalizer - AI Chunking Service
  * Integrates with local Ollama API for semantic text chunking
+ *
+ * DEPRECATION NOTICE:
+ * This module is a fallback for when Bridge Server is unavailable.
+ * Primary document analysis should go through Bridge Server's /api/content/analyze.
+ * The core analysis prompts (CHUNKING_SYSTEM_PROMPT, DOCUMENT_SUMMARY_PROMPT, CORE_THESIS_PROMPT)
+ * have been moved to bridge/services/aiProcessor.js to enforce Single Source of Truth.
+ *
+ * Functions in this file that call LLM for document-level analysis are deprecated:
+ * - generateDocumentSummary() - deprecated, use bridgeClient.analyzeContent()
+ * - chunkDocument() - deprecated, use bridgeClient.analyzeContent()
+ * - generateCoreThesis() - deprecated, use bridgeClient.analyzeContent()
+ *
+ * Functions that remain (vocabulary/sentence-level processing):
+ * - extractKeywords() - active (vocabulary extraction per chunk)
+ * - splitSentenceIntoGroups() - active (thought groups for pronunciation)
+ * - translateSentences() - active (sentence translation)
  */
 
 import { getThoughtGroupsCache, setThoughtGroupsCache } from '../db/schema';
