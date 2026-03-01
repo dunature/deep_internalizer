@@ -11,11 +11,11 @@
 
 | 维度 | 评分 | 变化 | 说明 |
 |------|------|------|------|
-| 代码结构 | 8.5/10 | +0.5 | Phase 1 完成，God Component 待拆分 |
-| 安全性 | 9.5/10 | +0.5 | Helmet + API 认证 + 错误分类 |
-| 错误处理 | 9/10 | +1 | 区分 operational/programmatic |
-| 代码一致性 | 9/10 | +0 | 命名规范，Prompt 有注释 |
-| 可维护性 | 8.5/10 | +0.5 | TTL 清理激活，Dexie 待优化 |
+| 代码结构 | 9.0/10 | +0.5 | Phase 1/2 完成，God Component 待拆分 |
+| 安全性 | 9.5/10 | +0 | Helmet + API 认证 + 错误分类 |
+| 错误处理 | 9/10 | +0 | 区分 operational/programmatic |
+| 代码一致性 | 9.5/10 | +0.5 | 命名规范，Prompt 单一事实来源 |
+| 可维护性 | 9.0/10 | +0.5 | TTL 清理激活，Dexie version 精简 |
 
 ---
 
@@ -216,10 +216,9 @@ app.use(helmet());
 | 优先级 | 问题 | 影响 | 预计工时 | 阶段 |
 |--------|------|------|----------|------|
 | P1 | God Component (1063 行) | 维护成本高 | 8h | Phase 3 |
-| P2 | Dexie version 冗余 | 增加混淆风险 | 2h | Phase 2 |
-| P2 | 双端 Prompt 重复 | Prompt 漂移风险 | 4h | Phase 2 |
 | P2 | SegmentLoop.jsx (723 行) | 组件过大 | 4h | Phase 3 |
 | P2 | ImportModal.jsx (652 行) | 组件过大 | 4h | Phase 3 |
+| P3 | 双端 Prompt 物理收敛 | Prompt 漂移风险 | 4h | Phase 2.5 |
 
 ---
 
@@ -256,10 +255,10 @@ app.use(helmet());
 - [x] 错误响应携带 `code` 字段
 - [x] 缓存清理任务启动
 
-### Phase 2 验收 (待完成)
+### Phase 2 验收 (已完成) ✅
 
-- [ ] Dexie version 定义精简
-- [ ] 双端 Prompt 统一标注
+- [x] Dexie version 定义精简
+- [x] 双端 Prompt 统一标注
 
 ### Phase 3 验收 (待完成)
 
@@ -276,9 +275,9 @@ app.use(helmet());
 - ✅ 错误处理增强
 - ✅ Helmet 安全头
 
-### 进行中 (Phase 2)
-- 🚧 Dexie version 优化
-- 🚧 双端 Prompt 收敛
+### 已完成 (Phase 2) ✅
+- ✅ Dexie version 优化 (version 6/7 增量定义)
+- ✅ 双端 Prompt 收敛 (chunkingService 标注为降级备用)
 
 ### 计划中 (Phase 3)
 - 📋 God Component 拆分
