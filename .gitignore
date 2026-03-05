@@ -24,6 +24,7 @@ dist-ssr
 
 # Python / TTS Server
 scripts/tts_server/venv/
+scripts/tts_server/venv311/
 __pycache__/
 *.py[cod]
 
