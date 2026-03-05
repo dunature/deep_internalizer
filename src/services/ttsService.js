@@ -6,7 +6,15 @@
  */
 import { db } from '../db/schema';
 
-const API_URL = import.meta.env.VITE_TTS_API_URL || 'http://localhost:8000/v1/audio/speech';
+function getDefaultTTSUrl() {
+    if (typeof window === 'undefined') {
+        return 'http://localhost:8000/v1/audio/speech';
+    }
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:8000/v1/audio/speech`;
+}
+
+const API_URL = import.meta.env.VITE_TTS_API_URL || getDefaultTTSUrl();
 
 // Common syllables that should be cached
 const COMMON_SYLLABLES = new Set([
@@ -59,7 +67,14 @@ class TTSService {
         });
 
         if (!response.ok) {
-            throw new Error(`TTS API Error: ${response.statusText}`);
+            let detail = '';
+            try {
+                const data = await response.json();
+                detail = data?.detail || data?.error || '';
+            } catch {
+                // ignore JSON parse errors
+            }
+            throw new Error(`TTS API Error ${response.status}${detail ? `: ${detail}` : ''}`);
         }
 
         return await response.blob();

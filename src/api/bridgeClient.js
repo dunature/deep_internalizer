@@ -7,6 +7,32 @@
 
 const BRIDGE_STORAGE_KEY = 'deep-internalizer-bridge-url';
 const DEFAULT_BRIDGE_URL = import.meta.env.VITE_BRIDGE_SERVER_URL || 'http://localhost:3737';
+const BRIDGE_API_KEY_STORAGE_KEY = 'deep-internalizer-bridge-api-key';
+
+function getBridgeApiKey() {
+    return localStorage.getItem(BRIDGE_API_KEY_STORAGE_KEY) || '';
+}
+
+export function setBridgeApiKey(apiKey) {
+    if (!apiKey) {
+        localStorage.removeItem(BRIDGE_API_KEY_STORAGE_KEY);
+        return;
+    }
+    localStorage.setItem(BRIDGE_API_KEY_STORAGE_KEY, apiKey);
+}
+
+export function clearBridgeApiKey() {
+    localStorage.removeItem(BRIDGE_API_KEY_STORAGE_KEY);
+}
+
+function withBridgeAuthHeaders(headers = {}) {
+    const apiKey = getBridgeApiKey();
+    if (!apiKey) return headers;
+    return {
+        ...headers,
+        Authorization: `Bearer ${apiKey}`
+    };
+}
 
 /**
  * Get the current Bridge Server URL.
@@ -40,8 +66,10 @@ async function fetchWithTimeout(endpoint, options = {}) {
     const url = `${getBridgeUrl()}${endpoint}`;
 
     try {
+        const headers = withBridgeAuthHeaders(fetchOptions.headers || {});
         const res = await fetch(url, {
             ...fetchOptions,
+            headers,
             signal: AbortSignal.timeout(timeoutMs)
         });
 

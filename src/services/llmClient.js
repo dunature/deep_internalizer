@@ -6,8 +6,7 @@
 const DEFAULT_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'deepseek';
 // Default bridge server URL fallback
 const BRIDGE_SERVER_URL = import.meta.env.VITE_BRIDGE_SERVER_URL || 'http://localhost:3737';
-// Token used to authenticate with the Bridge Server
-const BRIDGE_API_KEY = import.meta.env.VITE_BRIDGE_API_KEY || 'your_secret_key_here';
+const BRIDGE_API_KEY_STORAGE_KEY = 'deep-internalizer-bridge-api-key';
 
 const STORAGE_KEY = 'deep-internalizer-llm-config';
 
@@ -24,10 +23,14 @@ const DEFAULT_BASE_URLS = {
 };
 
 const DEFAULT_API_KEYS = {
-    deepseek: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
-    glm: import.meta.env.VITE_GLM_API_KEY || '',
+    deepseek: '',
+    glm: '',
     ollama: ''
 };
+
+function getBridgeApiKey() {
+    return localStorage.getItem(BRIDGE_API_KEY_STORAGE_KEY) || '';
+}
 
 function normalizeBaseUrl(url) {
     return url.replace(/\/+$/, '');
@@ -101,10 +104,16 @@ async function callBridgeProxy({
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${BRIDGE_API_KEY}`
-        },
+        headers: (() => {
+            const bridgeApiKey = getBridgeApiKey();
+            if (!bridgeApiKey) {
+                return { 'Content-Type': 'application/json' };
+            }
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${bridgeApiKey}`
+            };
+        })(),
         body: JSON.stringify({
             model,
             provider,

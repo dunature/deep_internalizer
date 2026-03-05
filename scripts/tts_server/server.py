@@ -133,9 +133,11 @@ async def generate_speech(request: SpeechRequest):
     voice_desc = VOICE_PRESETS.get(request.voice, VOICE_PRESETS["default"])
     
     if tts_model is None:
-        # Fallback: generate silence if model not loaded
-        print("⚠ Model not loaded, returning silence")
-        audio_data = np.zeros(int(SAMPLE_RATE * 0.5), dtype=np.float32)
+        if tts_model_loading:
+            raise HTTPException(status_code=503, detail="TTS model is still loading")
+        if tss_model_error:
+            raise HTTPException(status_code=500, detail=f"TTS model load failed: {tss_model_error}")
+        raise HTTPException(status_code=503, detail="TTS model is not ready")
     else:
         try:
             # Kokoro generation

@@ -12,6 +12,8 @@ export default function VocabularyCard({
     isTTSLoading,
     isBilingual
 }) {
+    const wordText = word?.word || word?.text || '';
+    const sentenceText = word?.sentence || word?.originalContext || '';
     const [isSplit, setIsSplit] = useState(false);
     const [activeSyllable, setActiveSyllable] = useState(null);
     const [isZhVisible, setIsZhVisible] = useState(isBilingual);
@@ -45,16 +47,16 @@ export default function VocabularyCard({
             <div className={styles.cardHeader}>
                 <h2
                     className={styles.mainWord}
-                    onClick={() => speak(word.word)}
+                    onClick={() => speak(wordText)}
                     style={{ cursor: 'pointer' }}
                 >
-                    {word.word}
+                    {wordText}
                 </h2>
                 <div className={styles.phoneticRow}>
                     <span className={styles.phoneticText}>{word.phonetic}</span>
                     <button
                         className={styles.audioBtn}
-                        onClick={() => speak(word.word)}
+                        onClick={() => speak(wordText)}
                         disabled={isTTSLoading}
                         title="Play word pronunciation"
                     >
@@ -112,7 +114,7 @@ export default function VocabularyCard({
                 </div>
                 <div className={styles.exampleSection}>
                     <div className={styles.exampleItem}>
-                        <HighlightedText text={word.sentence} highlight={word.word} />
+                        <HighlightedText text={sentenceText} highlight={wordText} />
                     </div>
                 </div>
             </div>
