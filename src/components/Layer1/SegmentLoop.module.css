@@ -321,6 +321,14 @@
     gap: 16px;
 }
 
+.step2Content .wordActions :global(.btn) {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
 .step2Content .wordActions :global(.btn-secondary) {
     background: #ffffff;
     color: #2563eb;
@@ -347,6 +355,79 @@
 
 .step2Content .loadingSpinner p {
     color: #64748b;
+}
+
+/* Step 2 — Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .headerStep2 {
+        background: #0f172a;
+        border-color: #1e293b;
+    }
+
+    .headerStep2 .chunkTitle {
+        color: #e2e8f0;
+    }
+
+    .headerStep2 .backBtn {
+        color: #60a5fa;
+    }
+
+    .headerStep2 .bilingualBtn {
+        background: #0f172a;
+        border-color: #1f2937;
+        color: #e2e8f0;
+    }
+
+    .headerStep2 .bilingualBtn.active {
+        background: #4f7dba;
+        border-color: #4f7dba;
+        color: #0f172a;
+    }
+
+    .contentStep2 {
+        background: #0b1220;
+        border-color: #1e293b;
+    }
+
+    .step2Content .stepLabel {
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+    }
+
+    .step2Content .stepHeader h3 {
+        color: #e2e8f0;
+    }
+
+    .step2Content .stepDesc {
+        color: #94a3b8;
+    }
+
+    .step2Content .wordActions :global(.btn-secondary) {
+        background: #0f172a;
+        color: #60a5fa;
+        border-color: #334155;
+    }
+
+    .step2Content .wordActions :global(.btn-primary) {
+        background: #4f7dba;
+        color: #0f172a;
+    }
+
+    .step2Content .skeletonCard {
+        background: #182338;
+        border-color: #1e293b;
+    }
+
+    .step2Content .skeletonWord,
+    .step2Content .skeletonPhonetic,
+    .step2Content .skeletonDefinition {
+        background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+        background-size: 200% 100%;
+    }
+
+    .step2Content .loadingSpinner p {
+        color: #94a3b8;
+    }
 }
 
 .stepHeader {

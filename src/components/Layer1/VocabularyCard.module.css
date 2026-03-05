@@ -1,15 +1,19 @@
+/* VocabularyCard — Refined per Variant 9 design spec */
+
 .cardShell {
     width: min(520px, 100%);
     min-height: 320px;
     margin: 0 auto;
     border-radius: 20px;
-    border: 1px solid #e2e8f0;
     background: #ffffff;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
 }
+
+/* ─── Front: word + phonetic + audio ─── */
 
 .cardHeader {
     padding: 24px 24px 16px;
@@ -22,11 +26,17 @@
 .mainWord {
     margin: 0;
     color: #0f172a;
-    font-family: var(--font-sans);
+    font-family: var(--font-sans, 'Inter', sans-serif);
     font-size: clamp(2rem, 5vw, 2.125rem);
     font-weight: 700;
     line-height: 1.1;
     text-align: center;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.mainWord:active {
+    color: #2563eb;
 }
 
 .phoneticRow {
@@ -39,7 +49,7 @@
 
 .phoneticText {
     color: #64748b;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
     font-size: 0.875rem;
     font-weight: 500;
 }
@@ -48,18 +58,29 @@
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 999px;
+    border-radius: 50%;
     background: #2563eb;
     color: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-size: 0.75rem;
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.audioBtn:hover {
+    transform: scale(1.1);
+}
+
+.audioBtn:active {
+    transform: scale(0.95);
 }
 
 .audioBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
 }
 
 .scissorBtn {
@@ -69,6 +90,7 @@
     font-size: 1rem;
     cursor: pointer;
     opacity: 0.8;
+    transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 .scissorBtn.active,
@@ -76,6 +98,8 @@
     opacity: 1;
     color: #2563eb;
 }
+
+/* ─── Syllable split ─── */
 
 .syllableContainer {
     width: 100%;
@@ -102,6 +126,7 @@
     color: #1e3a8a;
     font-size: 0.8125rem;
     font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .syllableChip.playing {
@@ -113,8 +138,10 @@
 .syllablePhonetic {
     color: #64748b;
     font-size: 0.75rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
 }
+
+/* ─── Back: pos + definition + example ─── */
 
 .cardBody {
     padding: 0 24px 24px;
@@ -132,7 +159,7 @@
 
 .posTag {
     color: #64748b;
-    font-family: var(--font-sans);
+    font-family: var(--font-sans, 'Inter', sans-serif);
     font-size: 0.75rem;
     font-weight: 600;
 }
@@ -153,7 +180,7 @@
     margin: 0;
     color: #334155;
     font-size: 0.9375rem;
-    line-height: 1.45;
+    line-height: 1.4;
 }
 
 .zhContainer {
@@ -176,6 +203,11 @@
     font-weight: 600;
     padding: 2px 8px;
     cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.revealBtn:hover {
+    background: #f1f5f9;
 }
 
 .exampleSection {
@@ -190,6 +222,8 @@
     line-height: 1.5;
 }
 
+/* ─── Responsive ─── */
+
 @media (max-width: 768px) {
     .cardShell {
         width: 100%;
@@ -202,5 +236,90 @@
 
     .cardBody {
         padding: 0 16px 16px;
+    }
+}
+
+/* ─── Dark Mode ─── */
+
+@media (prefers-color-scheme: dark) {
+    .cardShell {
+        background: linear-gradient(180deg, #182338 0%, #121b2b 100%);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.40);
+    }
+
+    .mainWord {
+        color: #e2e8f0;
+    }
+
+    .mainWord:active {
+        color: #60a5fa;
+    }
+
+    .phoneticText {
+        color: #d5dde8;
+    }
+
+    .audioBtn {
+        background: #4f7dba;
+        color: #0f172a;
+    }
+
+    .scissorBtn {
+        color: #94a3b8;
+    }
+
+    .scissorBtn.active,
+    .scissorBtn:hover {
+        color: #60a5fa;
+    }
+
+    .syllableChip {
+        border-color: #334155;
+        background: #1e293b;
+        color: #93c5fd;
+    }
+
+    .syllableChip.playing {
+        background: #4f7dba;
+        border-color: #4f7dba;
+        color: #0f172a;
+    }
+
+    .syllablePhonetic {
+        color: #94a3b8;
+    }
+
+    .posTag {
+        color: #d5dde8;
+    }
+
+    .divider {
+        background: #334155;
+    }
+
+    .definitionEn {
+        color: #f1f5f9;
+    }
+
+    .definitionCn {
+        color: #94a3b8;
+    }
+
+    .revealBtn {
+        border-color: #475569;
+        background: #1e293b;
+        color: #e2e8f0;
+    }
+
+    .revealBtn:hover {
+        background: #334155;
+    }
+
+    .exampleSection {
+        background: #0b1220;
+    }
+
+    .exampleItem {
+        color: #f1f5f9;
     }
 }
