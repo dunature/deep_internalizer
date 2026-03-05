@@ -65,8 +65,16 @@ export function setDone(taskId, result) {
 export function setError(taskId, error) {
     const task = tasks.get(taskId);
     if (!task) return null;
+    const message = error instanceof Error ? error.message : String(error);
+    const details = (error && typeof error === 'object') ? (error.details || null) : null;
     task.status = 'error';
-    task.error = error instanceof Error ? error.message : String(error);
+    task.error = {
+        message,
+        stage: error?.stage || 'unknown',
+        reason: error?.reason || 'runtime_error',
+        retryable: Boolean(error?.retryable),
+        rawSnippet: details?.rawSnippet || null
+    };
     task.updatedAt = Date.now();
     return task;
 }
@@ -77,7 +85,7 @@ export function setError(taskId, error) {
 export function getPublic(taskId) {
     const task = tasks.get(taskId);
     if (!task) return null;
-    const { content, ...rest } = task;
+    const { content: _content, ...rest } = task;
     return rest;
 }
 
