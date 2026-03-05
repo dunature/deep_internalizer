@@ -115,8 +115,14 @@ scheduleCacheCleanup();
 // ── Start ──────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
+    const rawProvider = String(process.env.LLM_PROVIDER || 'deepseek').toLowerCase();
+    const effectiveProvider = rawProvider === 'glm' ? 'glm' : 'deepseek';
+    const effectiveModel = effectiveProvider === 'glm'
+        ? (process.env.GLM_MODEL || 'glm-4.7')
+        : (process.env.DEEPSEEK_MODEL || 'deepseek-chat');
+
     console.log(`\n🌉 Bridge Server running at http://localhost:${PORT}`);
     console.log(`   Frontend URL: ${FRONTEND_URL}`);
-    console.log(`   LLM Provider: ${process.env.LLM_PROVIDER || 'ollama'}`);
-    console.log(`   LLM Model:    ${process.env.LLM_MODEL || 'llama3.1:latest'}\n`);
+    console.log(`   LLM Provider: ${effectiveProvider}`);
+    console.log(`   LLM Model:    ${effectiveModel}\n`);
 });

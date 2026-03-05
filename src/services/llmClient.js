@@ -11,21 +11,18 @@ const BRIDGE_API_KEY_STORAGE_KEY = 'deep-internalizer-bridge-api-key';
 const STORAGE_KEY = 'deep-internalizer-llm-config';
 
 const DEFAULT_MODELS = {
-    deepseek: 'deepseek-chat',
-    glm: 'glm-4.7',
-    ollama: 'llama3.1:latest'
+    deepseek: import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat',
+    glm: import.meta.env.VITE_GLM_MODEL || 'glm-4.7'
 };
 
 const DEFAULT_BASE_URLS = {
     deepseek: import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-    glm: import.meta.env.VITE_GLM_BASE_URL || 'https://api.z.ai/api/paas/v4',
-    ollama: import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434'
+    glm: import.meta.env.VITE_GLM_BASE_URL || 'https://api.z.ai/api/paas/v4'
 };
 
 const DEFAULT_API_KEYS = {
-    deepseek: '',
-    glm: '',
-    ollama: ''
+    deepseek: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
+    glm: import.meta.env.VITE_GLM_API_KEY || ''
 };
 
 function getBridgeApiKey() {
@@ -38,51 +35,69 @@ function normalizeBaseUrl(url) {
 
 function normalizeProvider(value) {
     const provider = (value || DEFAULT_PROVIDER).toLowerCase();
-    if (provider === 'deepseek' || provider === 'glm' || provider === 'ollama') {
+    if (provider === 'deepseek' || provider === 'glm') {
         return provider;
     }
-    return 'ollama';
+    return 'deepseek';
+}
+
+function sanitizeConfig(config, rawProvider) {
+    const provider = normalizeProvider(config?.provider || rawProvider);
+    const migratedFromLocal = rawProvider === 'ollama';
+    const fallbackModel = DEFAULT_MODELS[provider];
+    const fallbackBaseUrl = normalizeBaseUrl(DEFAULT_BASE_URLS[provider]);
+
+    const model = migratedFromLocal || !config?.model || config.model === 'llama3.1:latest'
+        ? fallbackModel
+        : config.model;
+    const baseUrl = migratedFromLocal || !config?.baseUrl || normalizeBaseUrl(config.baseUrl) === 'http://localhost:11434'
+        ? fallbackBaseUrl
+        : normalizeBaseUrl(config.baseUrl);
+
+    return {
+        ...config,
+        provider,
+        model,
+        baseUrl,
+        apiKey: config?.apiKey || DEFAULT_API_KEYS[provider]
+    };
 }
 
 export function getLLMConfig() {
     const fallbackProvider = normalizeProvider(DEFAULT_PROVIDER);
+    let config;
 
     // Try to load from localStorage first
     const savedConfig = localStorage.getItem(STORAGE_KEY);
     if (savedConfig) {
         try {
             const parsed = JSON.parse(savedConfig);
-            const provider = normalizeProvider(parsed?.provider);
-            return {
-                ...parsed,
-                provider,
-                model: parsed?.model || DEFAULT_MODELS[provider],
-                baseUrl: normalizeBaseUrl(parsed?.baseUrl || DEFAULT_BASE_URLS[provider]),
-                apiKey: parsed?.apiKey || DEFAULT_API_KEYS[provider]
-            };
+            config = sanitizeConfig(parsed, parsed?.provider);
         } catch (e) {
             console.error('Failed to parse saved LLM config:', e);
         }
     }
 
-    // Fallback to default configs for UI (The backend uses its own .env for the actual provider logic)
-    return {
-        provider: fallbackProvider,
-        model: DEFAULT_MODELS[fallbackProvider],
-        baseUrl: normalizeBaseUrl(DEFAULT_BASE_URLS[fallbackProvider]),
-        apiKey: DEFAULT_API_KEYS[fallbackProvider]
-    };
+    // Fallback to default configs for UI
+    if (!config) {
+        config = sanitizeConfig({
+            provider: fallbackProvider,
+            model: DEFAULT_MODELS[fallbackProvider],
+            baseUrl: DEFAULT_BASE_URLS[fallbackProvider],
+            apiKey: DEFAULT_API_KEYS[fallbackProvider]
+        }, fallbackProvider);
+    }
+
+    if (import.meta.env.DEV && !config.apiKey) {
+        console.warn(`[LLM] Provider "${config.provider}" is missing an API key`);
+    }
+
+    return config;
 }
 
 export function saveLLMConfig(config) {
-    const provider = normalizeProvider(config?.provider);
-    const normalized = {
-        ...config,
-        provider,
-        model: config?.model || DEFAULT_MODELS[provider],
-        baseUrl: normalizeBaseUrl(config?.baseUrl || DEFAULT_BASE_URLS[provider]),
-        apiKey: config?.apiKey || DEFAULT_API_KEYS[provider]
-    };
+    const rawProvider = config?.provider;
+    const normalized = sanitizeConfig(config, rawProvider);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
 }
 
@@ -118,7 +133,7 @@ async function callBridgeProxy({
             model,
             provider,
             baseUrl,
-            apiKey,
+            ...(apiKey ? { apiKey } : {}),
             system,
             user,
             temperature,

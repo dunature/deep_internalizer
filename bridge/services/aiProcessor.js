@@ -20,29 +20,31 @@ import 'dotenv/config';
 
 // ── Configuration ──────────────────────────────────────────────
 
-const DEFAULT_PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
+const RAW_DEFAULT_PROVIDER = (process.env.LLM_PROVIDER || 'deepseek').toLowerCase();
+const DEFAULT_PROVIDER = RAW_DEFAULT_PROVIDER === 'glm' ? 'glm' : 'deepseek';
+const GENERIC_MODEL = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_MODEL : '';
+const GENERIC_BASE_URL = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_BASE_URL : '';
+const GENERIC_API_KEY = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_API_KEY : '';
+
 const DEFAULT_MODEL_BY_PROVIDER = {
-    deepseek: 'deepseek-chat',
-    glm: 'glm-4.7',
-    ollama: process.env.LLM_MODEL || 'llama3.1:latest'
+    deepseek: process.env.DEEPSEEK_MODEL || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_MODEL : '') || 'deepseek-chat',
+    glm: process.env.GLM_MODEL || (DEFAULT_PROVIDER === 'glm' ? GENERIC_MODEL : '') || 'glm-4.7'
 };
 const DEFAULT_BASE_URL_BY_PROVIDER = {
-    deepseek: process.env.DEEPSEEK_BASE_URL || process.env.LLM_BASE_URL || 'https://api.deepseek.com',
-    glm: process.env.GLM_BASE_URL || process.env.LLM_BASE_URL || 'https://api.z.ai/api/paas/v4',
-    ollama: process.env.OLLAMA_BASE_URL || process.env.LLM_BASE_URL || 'http://localhost:11434'
+    deepseek: process.env.DEEPSEEK_BASE_URL || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_BASE_URL : '') || 'https://api.deepseek.com',
+    glm: process.env.GLM_BASE_URL || (DEFAULT_PROVIDER === 'glm' ? GENERIC_BASE_URL : '') || 'https://api.z.ai/api/paas/v4'
 };
 const DEFAULT_API_KEY_BY_PROVIDER = {
-    deepseek: process.env.DEEPSEEK_API_KEY || process.env.LLM_API_KEY || '',
-    glm: process.env.GLM_API_KEY || process.env.LLM_API_KEY || '',
-    ollama: ''
+    deepseek: process.env.DEEPSEEK_API_KEY || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_API_KEY : '') || '',
+    glm: process.env.GLM_API_KEY || (DEFAULT_PROVIDER === 'glm' ? GENERIC_API_KEY : '') || ''
 };
 
 function normalizeProvider(provider) {
     const value = String(provider || DEFAULT_PROVIDER).toLowerCase();
-    if (value === 'deepseek' || value === 'glm' || value === 'ollama') {
+    if (value === 'deepseek' || value === 'glm') {
         return value;
     }
-    return 'ollama';
+    return 'deepseek';
 }
 
 function normalizeBaseUrl(url) {
@@ -51,11 +53,25 @@ function normalizeBaseUrl(url) {
 
 function resolveLLMConfig(options = {}) {
     const provider = normalizeProvider(options.provider);
+    const migratedFromLocal = String(options.provider || '').toLowerCase() === 'ollama';
+    const rawKey = (options.apiKey && options.apiKey.trim()) || DEFAULT_API_KEY_BY_PROVIDER[provider];
+
+    if (migratedFromLocal) {
+        console.warn('[LLM] Ignoring legacy local-model config and using DeepSeek defaults');
+    }
+
+    const model = migratedFromLocal || !options.model || options.model === 'llama3.1:latest'
+        ? DEFAULT_MODEL_BY_PROVIDER[provider]
+        : options.model;
+    const baseUrl = migratedFromLocal || !options.baseUrl || normalizeBaseUrl(options.baseUrl) === 'http://localhost:11434'
+        ? DEFAULT_BASE_URL_BY_PROVIDER[provider]
+        : options.baseUrl;
+
     return {
         provider,
-        model: options.model || DEFAULT_MODEL_BY_PROVIDER[provider],
-        baseUrl: normalizeBaseUrl(options.baseUrl || DEFAULT_BASE_URL_BY_PROVIDER[provider]),
-        apiKey: options.apiKey || DEFAULT_API_KEY_BY_PROVIDER[provider]
+        model,
+        baseUrl: normalizeBaseUrl(baseUrl),
+        apiKey: rawKey
     };
 }
 
@@ -150,24 +166,7 @@ export async function callLLM({
 }) {
     const config = resolveLLMConfig({ model, provider, baseUrl, apiKey });
 
-    if (config.provider === 'ollama') {
-        const prompt = system ? `${system}\n\n${user}` : user;
-        const res = await fetch(`${config.baseUrl}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: config.model,
-                prompt,
-                stream: false,
-                options: { temperature, num_predict: maxTokens }
-            })
-        });
-        if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
-        const data = await res.json();
-        return data.response;
-    }
-
-    // OpenAI-compatible (DeepSeek, GLM, etc.)
+    // OpenAI-compatible (DeepSeek, GLM)
     if (!config.apiKey) throw new Error(`API key is required for provider "${config.provider}"`);
     const messages = system
         ? [{ role: 'system', content: system }, { role: 'user', content: user }]
@@ -327,32 +326,15 @@ export async function extractVocabulary(text, llmOptions = {}) {
     if (!text || text.trim().length === 0) return [];
     const config = resolveLLMConfig(llmOptions);
 
-    try {
-        const vocabModel = config.provider === 'ollama' ? 'qwen3:4b' : config.model;
-        const response = await callLLM({
-            system: VOCABULARY_EXTRACTION_PROMPT,
-            user: `Paragraph:\n${text.substring(0, 1000)}`,
-            temperature: 0.3,
-            maxTokens: 1500,
-            ...config,
-            model: vocabModel
-        });
-        return parseJsonResponse(response);
-    } catch (error) {
-        // Fallback to default model if the fast vocab model isn't available.
-        if (config.provider !== 'ollama' || !String(error?.message || '').includes('Ollama error: 404')) {
-            throw error;
-        }
-
-        const response = await callLLM({
-            system: VOCABULARY_EXTRACTION_PROMPT,
-            user: `Paragraph:\n${text.substring(0, 1000)}`,
-            temperature: 0.3,
-            maxTokens: 1500,
-            ...config
-        });
-        return parseJsonResponse(response);
-    }
+    const response = await callLLM({
+        system: VOCABULARY_EXTRACTION_PROMPT,
+        user: `Paragraph:
+${text.substring(0, 1000)}`,
+        temperature: 0.3,
+        maxTokens: 1500,
+        ...config
+    });
+    return parseJsonResponse(response);
 }
 
 export default { analyzeContent };

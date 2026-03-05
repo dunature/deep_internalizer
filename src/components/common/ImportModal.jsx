@@ -20,10 +20,6 @@ const PROVIDER_DEFAULTS = {
     glm: {
         model: 'glm-4.7',
         baseUrl: 'https://api.z.ai/api/paas/v4'
-    },
-    ollama: {
-        model: 'llama3.1:latest',
-        baseUrl: 'http://localhost:11434'
     }
 };
 
@@ -169,15 +165,13 @@ export default function ImportModal({
         const provider = e.target.value;
         let updated = { ...llmConfig, provider };
 
-        const defaults = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.ollama;
-        if (!updated.model || updated.model === PROVIDER_DEFAULTS.ollama.model || updated.model === PROVIDER_DEFAULTS.deepseek.model || updated.model === PROVIDER_DEFAULTS.glm.model) {
+        const defaults = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.deepseek;
+        if (!updated.model || updated.model === 'llama3.1:latest' || updated.model === PROVIDER_DEFAULTS.deepseek.model || updated.model === PROVIDER_DEFAULTS.glm.model) {
             updated.model = defaults.model;
         }
-        if (!updated.baseUrl || updated.baseUrl === PROVIDER_DEFAULTS.ollama.baseUrl || updated.baseUrl === PROVIDER_DEFAULTS.deepseek.baseUrl || updated.baseUrl === PROVIDER_DEFAULTS.glm.baseUrl) {
+        if (!updated.baseUrl || updated.baseUrl === 'http://localhost:11434' || updated.baseUrl === PROVIDER_DEFAULTS.deepseek.baseUrl || updated.baseUrl === PROVIDER_DEFAULTS.glm.baseUrl) {
             updated.baseUrl = defaults.baseUrl;
         }
-        if (provider === 'ollama') updated.apiKey = '';
-
         setLlmConfig(updated);
         saveLLMConfig(updated);
     };
@@ -455,12 +449,12 @@ export default function ImportModal({
                         {/* AI Settings - collapsible */}
                         <details
                             className={styles.llmSettings}
-                            open={llmConfig.provider !== 'ollama' && !llmConfig.apiKey}
+                            open={!llmConfig.apiKey}
                         >
                             <summary className={styles.llmSettingsSummary}>
                                 ⚙️ AI Settings
                                 <span className={styles.llmProvider}>
-                                    {llmConfig.provider === 'ollama' ? 'Ollama (Local)' : llmConfig.provider === 'glm' ? 'GLM (Cloud)' : 'DeepSeek (Cloud)'}
+                                    {llmConfig.provider === 'glm' ? 'GLM (Cloud)' : 'DeepSeek (Cloud)'}
                                 </span>
                             </summary>
                             <div className={styles.llmSettingsGrid}>
@@ -475,7 +469,6 @@ export default function ImportModal({
                                     >
                                         <option value="deepseek">DeepSeek (Cloud)</option>
                                         <option value="glm">GLM (Cloud)</option>
-                                        <option value="ollama">Ollama (Local)</option>
                                     </select>
                                 </div>
                                 <div className={styles.llmField}>
@@ -497,25 +490,23 @@ export default function ImportModal({
                                         name="baseUrl"
                                         value={llmConfig.baseUrl || ''}
                                         onChange={handleLlmFieldChange}
-                                        placeholder={llmConfig.provider === 'ollama' ? 'http://localhost:11434' : 'https://api.provider.com'}
+                                        placeholder="https://api.provider.com"
                                         className={styles.input}
                                         disabled={isLoading || isParsing}
                                     />
                                 </div>
-                                {llmConfig.provider !== 'ollama' && (
-                                    <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
-                                        <label>API Key</label>
-                                        <input
-                                            type="password"
-                                            name="apiKey"
-                                            value={llmConfig.apiKey || ''}
-                                            onChange={handleLlmFieldChange}
-                                            placeholder="Enter API key for this import"
-                                            className={styles.input}
-                                            disabled={isLoading || isParsing}
-                                        />
-                                    </div>
-                                )}
+                                <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
+                                    <label>API Key</label>
+                                    <input
+                                        type="password"
+                                        name="apiKey"
+                                        value={llmConfig.apiKey || ''}
+                                        onChange={handleLlmFieldChange}
+                                        placeholder="Enter API key for this import"
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    />
+                                </div>
                             </div>
                         </details>
 

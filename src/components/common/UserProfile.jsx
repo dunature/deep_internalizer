@@ -421,11 +421,12 @@ export default function UserProfile({ onBack }) {
         const provider = e.target.value;
         let newConfig = { ...llmConfig, provider };
 
-        // Load defaults if switching to a known provider and currently empty or switching from local
-        if (provider === 'deepseek' && newConfig.model === 'llama3.1:latest') {
-            newConfig.model = 'deepseek-chat';
-        } else if (provider === 'ollama' && newConfig.model === 'deepseek-chat') {
-            newConfig.model = 'llama3.1:latest';
+        // Silently migrate any old local-model config to cloud defaults
+        if (newConfig.model === 'llama3.1:latest') {
+            newConfig.model = provider === 'glm' ? 'glm-4.7' : 'deepseek-chat';
+        }
+        if (newConfig.baseUrl === 'http://localhost:11434') {
+            newConfig.baseUrl = provider === 'glm' ? 'https://api.z.ai/api/paas/v4' : 'https://api.deepseek.com';
         }
 
         setLlmConfig(newConfig);
@@ -552,8 +553,8 @@ export default function UserProfile({ onBack }) {
                             onChange={handleProviderChange}
                             className={styles.select}
                         >
-                            <option value="ollama">Ollama (Local)</option>
                             <option value="deepseek">DeepSeek (Cloud)</option>
+                            <option value="glm">GLM (Cloud)</option>
                         </select>
                     </div>
 
@@ -564,7 +565,7 @@ export default function UserProfile({ onBack }) {
                             name="model"
                             value={llmConfig.model}
                             onChange={handleLlmConfigChange}
-                            placeholder="e.g. llama3.1"
+                            placeholder="e.g. deepseek-chat"
                             className={styles.input}
                         />
                     </div>
