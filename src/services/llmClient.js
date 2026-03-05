@@ -25,7 +25,36 @@ export function getLLMConfig() {
     const savedConfig = localStorage.getItem(STORAGE_KEY);
     if (savedConfig) {
         try {
-            return JSON.parse(savedConfig);
+            const parsed = JSON.parse(savedConfig);
+            const provider = (parsed?.provider || DEFAULT_PROVIDER).toLowerCase();
+
+            if (provider === 'deepseek') {
+                return {
+                    ...parsed,
+                    provider,
+                    baseUrl: normalizeBaseUrl(parsed?.baseUrl || DEEPSEEK_BASE_URL),
+                    model: parsed?.model || DEEPSEEK_MODEL,
+                    apiKey: parsed?.apiKey || import.meta.env.VITE_DEEPSEEK_API_KEY || ''
+                };
+            }
+
+            if (provider === 'glm') {
+                return {
+                    ...parsed,
+                    provider,
+                    baseUrl: normalizeBaseUrl(parsed?.baseUrl || GLM_BASE_URL),
+                    model: parsed?.model || GLM_MODEL,
+                    apiKey: parsed?.apiKey || import.meta.env.VITE_GLM_API_KEY || ''
+                };
+            }
+
+            return {
+                ...parsed,
+                provider: 'ollama',
+                baseUrl: normalizeBaseUrl(parsed?.baseUrl || OLLAMA_BASE_URL),
+                model: parsed?.model || OLLAMA_MODEL,
+                apiKey: ''
+            };
         } catch (e) {
             console.error('Failed to parse saved LLM config:', e);
         }

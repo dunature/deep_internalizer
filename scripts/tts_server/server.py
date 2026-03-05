@@ -9,7 +9,7 @@ import io
 import uvicorn
 import numpy as np
 import soundfile as sf
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,11 +20,34 @@ app = FastAPI(title="Local Kokoro-TTS API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://10.33.141.236:5173",
+        "http://198.18.0.1:5173",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$",
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.options("/v1/audio/speech")
+async def speech_preflight(request: Request):
+    """Handle non-standard preflight variants that CORSMiddleware may not classify."""
+    origin = request.headers.get("origin", "*")
+    acr_headers = request.headers.get("access-control-request-headers", "content-type")
+    return Response(
+        status_code=204,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": acr_headers,
+            "Access-Control-Max-Age": "600",
+            "Vary": "Origin",
+        },
+    )
 
 # Global model holder
 tts_model = None
