@@ -299,24 +299,24 @@
 .step2Content .stepLabel {
     color: #2563eb;
     background: #dbeafe;
-    font-size: 0.875rem;
-    padding: 4px 12px;
+    font-size: var(--text-base, 1rem);
+    padding: 6px 16px;
 }
 
 .step2Content .stepHeader h3 {
     color: #0f172a;
     font-family: var(--font-sans);
-    font-size: 2rem;
+    font-size: var(--text-3xl, 1.875rem);
     margin-bottom: 2px;
 }
 
 .step2Content .stepDesc {
     color: #64748b;
-    font-size: 0.875rem;
+    font-size: var(--text-xl, 1.25rem);
 }
 
 .step2Content .wordActions {
-    width: min(520px, 100%);
+    width: min(700px, 100%);
     margin: 0 auto;
     gap: 16px;
 }
