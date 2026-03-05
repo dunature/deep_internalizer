@@ -62,7 +62,7 @@ async function processTask(taskId, hash, content, title, llm) {
     queue.setProcessing(taskId);
 
     try {
-        const result = await analyzeContent(content, llm);
+        const result = await analyzeContent(content, { ...(llm || {}), taskId });
 
         // Attach title
         result.title = title || inferTitle(content);

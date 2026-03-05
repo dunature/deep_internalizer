@@ -11,6 +11,8 @@ router.get('/:taskId', (req, res) => {
     if (!task) {
         return res.status(404).json({ error: 'Task not found' });
     }
+    // Polling endpoint should always return fresh status updates.
+    res.set('Cache-Control', 'no-store');
     res.json(task);
 });
 

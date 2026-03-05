@@ -512,6 +512,11 @@ function App() {
         coreThesis = bridgeResult.coreThesis || '';
         semanticChunks = bridgeResult.chunks || [];
         documentSummary = bridgeResult.summary || '';
+        if (Array.isArray(bridgeResult.warnings) && bridgeResult.warnings.length > 0) {
+          bridgeResult.warnings.forEach((warning) => {
+            addLog(`Warning: ${warning.message || 'Analysis fallback applied'}`, 'done');
+          });
+        }
         if (!semanticChunks.length) throw new Error("No chunks returned from analysis");
       }
 
@@ -534,7 +539,10 @@ function App() {
       }
       if (operationId === asyncOperationIdRef.current) {
         console.error('Import failed:', error);
-        alert(`Import failed: ${error.message}. Make sure LLM service is running.`);
+        const stage = error?.taskError?.stage;
+        const reason = error?.taskError?.reason;
+        const detail = stage ? ` [${stage}${reason ? `/${reason}` : ''}]` : '';
+        alert(`Import failed${detail}: ${error.message}. Make sure LLM service is running.`);
       }
     } finally {
       if (operationId === asyncOperationIdRef.current) {

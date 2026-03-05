@@ -25,8 +25,14 @@ export function clearBridgeApiKey() {
     localStorage.removeItem(BRIDGE_API_KEY_STORAGE_KEY);
 }
 
+function normalizeBridgeApiKey(raw) {
+    const token = String(raw || '').trim();
+    if (!token) return '';
+    return token.replace(/^Bearer\s+/i, '').trim();
+}
+
 function withBridgeAuthHeaders(headers = {}) {
-    const apiKey = getBridgeApiKey();
+    const apiKey = normalizeBridgeApiKey(getBridgeApiKey());
     if (!apiKey) return headers;
     return {
         ...headers,
@@ -58,6 +64,22 @@ export class BridgeNetworkError extends Error {
     }
 }
 
+function normalizeTaskError(errorPayload) {
+    if (!errorPayload) {
+        return { message: 'Server task failed', stage: 'unknown', reason: 'unknown', retryable: false };
+    }
+    if (typeof errorPayload === 'string') {
+        return { message: errorPayload, stage: 'unknown', reason: 'runtime_error', retryable: false };
+    }
+    return {
+        message: errorPayload.message || 'Server task failed',
+        stage: errorPayload.stage || 'unknown',
+        reason: errorPayload.reason || 'runtime_error',
+        retryable: Boolean(errorPayload.retryable),
+        rawSnippet: errorPayload.rawSnippet || null
+    };
+}
+
 /**
  * Core fetch wrapper with timeout and robust error handling.
  */
@@ -67,11 +89,22 @@ async function fetchWithTimeout(endpoint, options = {}) {
 
     try {
         const headers = withBridgeAuthHeaders(fetchOptions.headers || {});
-        const res = await fetch(url, {
+        let res = await fetch(url, {
             ...fetchOptions,
             headers,
             signal: AbortSignal.timeout(timeoutMs)
         });
+
+        // Local dev recovery: stale token in localStorage should not block localhost requests.
+        if (res.status === 401 && headers.Authorization) {
+            const retryHeaders = { ...headers };
+            delete retryHeaders.Authorization;
+            res = await fetch(url, {
+                ...fetchOptions,
+                headers: retryHeaders,
+                signal: AbortSignal.timeout(timeoutMs)
+            });
+        }
 
         if (!res.ok) {
             let errorMessage = `HTTP Error ${res.status}`;
@@ -173,7 +206,14 @@ export async function submitAnalysis(payload) {
  * @returns {Promise<object>} Task data with result
  */
 export async function getTask(taskId) {
-    return fetchWithTimeout(`/api/tasks/${taskId}`, { timeoutMs: 5000 });
+    const cacheBustedEndpoint = `/api/tasks/${taskId}?t=${Date.now()}`;
+    return fetchWithTimeout(cacheBustedEndpoint, {
+        timeoutMs: 5000,
+        cache: 'no-store',
+        headers: {
+            'Cache-Control': 'no-cache'
+        }
+    });
 }
 
 /**
@@ -204,7 +244,11 @@ export async function pollTaskStatus(taskId, { intervalMs = 3000, timeoutMs = 60
             }
 
             if (data.status === 'error') {
-                throw new BridgeNetworkError(data.error || 'Server task failed');
+                const normalized = normalizeTaskError(data.error);
+                const taskError = new BridgeNetworkError(normalized.message || 'Server task failed');
+                taskError.isTerminalTaskError = true;
+                taskError.taskError = normalized;
+                throw taskError;
             }
 
             // Reset retry count on successful poll that is simply 'processing' or 'queued'
@@ -214,10 +258,16 @@ export async function pollTaskStatus(taskId, { intervalMs = 3000, timeoutMs = 60
             await new Promise(resolve => setTimeout(resolve, intervalMs));
 
         } catch (error) {
+            if (error.status === 304) {
+                retryCount = 0;
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
+                continue;
+            }
+
             retryCount++;
 
             // Fail fast for terminal task failures and backend 4xx/5xx responses.
-            if (error.message.includes('Server task failed') || error.status === 404 || (typeof error.status === 'number' && error.status >= 400)) {
+            if (error.isTerminalTaskError || error.message.includes('Server task failed') || error.status === 404 || (typeof error.status === 'number' && error.status >= 400)) {
                 throw error;
             }
 
