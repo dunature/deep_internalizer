@@ -20,10 +20,44 @@ import 'dotenv/config';
 
 // ── Configuration ──────────────────────────────────────────────
 
-const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
-const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '');
-const LLM_MODEL = process.env.LLM_MODEL || 'qwen2.5:7b';
-const LLM_API_KEY = process.env.LLM_API_KEY || '';
+const DEFAULT_PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
+const DEFAULT_MODEL_BY_PROVIDER = {
+    deepseek: 'deepseek-chat',
+    glm: 'glm-4.7',
+    ollama: process.env.LLM_MODEL || 'llama3.1:latest'
+};
+const DEFAULT_BASE_URL_BY_PROVIDER = {
+    deepseek: process.env.DEEPSEEK_BASE_URL || process.env.LLM_BASE_URL || 'https://api.deepseek.com',
+    glm: process.env.GLM_BASE_URL || process.env.LLM_BASE_URL || 'https://api.z.ai/api/paas/v4',
+    ollama: process.env.OLLAMA_BASE_URL || process.env.LLM_BASE_URL || 'http://localhost:11434'
+};
+const DEFAULT_API_KEY_BY_PROVIDER = {
+    deepseek: process.env.DEEPSEEK_API_KEY || process.env.LLM_API_KEY || '',
+    glm: process.env.GLM_API_KEY || process.env.LLM_API_KEY || '',
+    ollama: ''
+};
+
+function normalizeProvider(provider) {
+    const value = String(provider || DEFAULT_PROVIDER).toLowerCase();
+    if (value === 'deepseek' || value === 'glm' || value === 'ollama') {
+        return value;
+    }
+    return 'ollama';
+}
+
+function normalizeBaseUrl(url) {
+    return String(url || '').replace(/\/+$/, '');
+}
+
+function resolveLLMConfig(options = {}) {
+    const provider = normalizeProvider(options.provider);
+    return {
+        provider,
+        model: options.model || DEFAULT_MODEL_BY_PROVIDER[provider],
+        baseUrl: normalizeBaseUrl(options.baseUrl || DEFAULT_BASE_URL_BY_PROVIDER[provider]),
+        apiKey: options.apiKey || DEFAULT_API_KEY_BY_PROVIDER[provider]
+    };
+}
 
 // ── Prompts (mirrored from chunkingService.js) ─────────────────
 
@@ -104,14 +138,25 @@ function tokenizeSentences(text) {
 
 // ── LLM Call ───────────────────────────────────────────────────
 
-export async function callLLM({ system, user, temperature = 0.3, maxTokens = 2048 }) {
-    if (LLM_PROVIDER === 'ollama') {
+export async function callLLM({
+    system,
+    user,
+    temperature = 0.3,
+    maxTokens = 2048,
+    model,
+    provider,
+    baseUrl,
+    apiKey
+}) {
+    const config = resolveLLMConfig({ model, provider, baseUrl, apiKey });
+
+    if (config.provider === 'ollama') {
         const prompt = system ? `${system}\n\n${user}` : user;
-        const res = await fetch(`${LLM_BASE_URL}/api/generate`, {
+        const res = await fetch(`${config.baseUrl}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: LLM_MODEL,
+                model: config.model,
                 prompt,
                 stream: false,
                 options: { temperature, num_predict: maxTokens }
@@ -123,18 +168,18 @@ export async function callLLM({ system, user, temperature = 0.3, maxTokens = 204
     }
 
     // OpenAI-compatible (DeepSeek, GLM, etc.)
-    if (!LLM_API_KEY) throw new Error('LLM_API_KEY is required for non-Ollama providers');
+    if (!config.apiKey) throw new Error(`API key is required for provider "${config.provider}"`);
     const messages = system
         ? [{ role: 'system', content: system }, { role: 'user', content: user }]
         : [{ role: 'user', content: user }];
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+    const res = await fetch(`${config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${LLM_API_KEY}`
+            Authorization: `Bearer ${config.apiKey}`
         },
         body: JSON.stringify({
-            model: LLM_MODEL,
+            model: config.model,
             messages,
             temperature,
             max_tokens: maxTokens,
@@ -191,18 +236,20 @@ function parseJsonResponse(response) {
  * @param {string} text - Raw document text
  * @returns {{ coreThesis: string, summary: string, model: string, chunks: Array }}
  */
-export async function analyzeContent(text) {
+export async function analyzeContent(text, llmOptions = {}) {
     const sentences = tokenizeSentences(text);
     if (sentences.length === 0) throw new Error('No sentences found in text');
 
-    console.log(`[AI] Analyzing ${sentences.length} sentences with ${LLM_PROVIDER}/${LLM_MODEL}...`);
+    const config = resolveLLMConfig(llmOptions);
+    console.log(`[AI] Analyzing ${sentences.length} sentences with ${config.provider}/${config.model}...`);
 
     // Step 1: Generate document summary (guides chunking quality)
     let summary = '';
     try {
         summary = await callLLM({
             system: DOCUMENT_SUMMARY_PROMPT,
-            user: `Text:\n${text.substring(0, 3000)}`
+            user: `Text:\n${text.substring(0, 3000)}`,
+            ...config
         });
         summary = summary.trim();
         console.log('[AI] Document summary generated.');
@@ -213,7 +260,8 @@ export async function analyzeContent(text) {
     // Step 2: Core thesis
     const coreThesis = await callLLM({
         system: CORE_THESIS_PROMPT,
-        user: `Text:\n${text.substring(0, 2000)}`
+        user: `Text:\n${text.substring(0, 2000)}`,
+        ...config
     });
     console.log('[AI] Core thesis generated.');
 
@@ -232,7 +280,8 @@ export async function analyzeContent(text) {
         const summaryBlock = summary ? `Document summary (for guidance):\n${summary}\n\n` : '';
         const response = await callLLM({
             system: CHUNKING_SYSTEM_PROMPT,
-            user: `${summaryBlock}Text to analyze (${sentences.length} sentences):\n${text}`
+            user: `${summaryBlock}Text to analyze (${sentences.length} sentences):\n${text}`,
+            ...config
         });
         chunks = parseJsonResponse(response);
         // Enrich with original text
@@ -250,7 +299,7 @@ export async function analyzeContent(text) {
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         try {
-            const vocab = await extractVocabulary(chunk.originalText);
+            const vocab = await extractVocabulary(chunk.originalText, config);
             console.log(`[AI] Chunk ${i + 1}: extracted ${vocab.length} words`);
             chunkWithVocab.push({ ...chunk, vocabulary: vocab });
         } catch (err) {
@@ -264,7 +313,7 @@ export async function analyzeContent(text) {
     return {
         coreThesis: coreThesis.trim(),
         summary,
-        model: `${LLM_PROVIDER}/${LLM_MODEL}`,
+        model: `${config.provider}/${config.model}`,
         chunks: chunkWithVocab
     };
 }
@@ -274,23 +323,35 @@ export async function analyzeContent(text) {
  * @param {string} text - The text to extract vocabulary from
  * @returns {Promise<Array>} Array of vocabulary items
  */
-export async function extractVocabulary(text) {
+export async function extractVocabulary(text, llmOptions = {}) {
     if (!text || text.trim().length === 0) return [];
-
-    // Use smaller model for faster vocabulary extraction
-    const savedModel = process.env.LLM_MODEL;
-    process.env.LLM_MODEL = 'qwen3:4b';
+    const config = resolveLLMConfig(llmOptions);
 
     try {
+        const vocabModel = config.provider === 'ollama' ? 'qwen3:4b' : config.model;
         const response = await callLLM({
             system: VOCABULARY_EXTRACTION_PROMPT,
             user: `Paragraph:\n${text.substring(0, 1000)}`,
             temperature: 0.3,
-            maxTokens: 1500
+            maxTokens: 1500,
+            ...config,
+            model: vocabModel
         });
         return parseJsonResponse(response);
-    } finally {
-        if (savedModel) process.env.LLM_MODEL = savedModel;
+    } catch (error) {
+        // Fallback to default model if the fast vocab model isn't available.
+        if (config.provider !== 'ollama' || !String(error?.message || '').includes('Ollama error: 404')) {
+            throw error;
+        }
+
+        const response = await callLLM({
+            system: VOCABULARY_EXTRACTION_PROMPT,
+            user: `Paragraph:\n${text.substring(0, 1000)}`,
+            temperature: 0.3,
+            maxTokens: 1500,
+            ...config
+        });
+        return parseJsonResponse(response);
     }
 }
 

@@ -27,6 +27,12 @@ app.use(helmet());
 // Request logging
 app.use(morgan('combined'));
 
+// Only allow configured frontend URL (default to localhost:5173 for dev fallback)
+// CORS must run before rate limiters so 4xx responses also include CORS headers.
+const allowedOrigins = process.env.BRIDGE_FRONTEND_URL ? [process.env.BRIDGE_FRONTEND_URL] : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+app.use(cors({ origin: allowedOrigins }));
+app.use(express.json({ limit: '5mb' }));
+
 // Global rate limit: 100 requests per 15 minutes per IP
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -45,11 +51,6 @@ const analyzeLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
-
-// Only allow configured frontend URL (default to localhost:5173 for dev fallback)
-const allowedOrigins = process.env.BRIDGE_FRONTEND_URL ? [process.env.BRIDGE_FRONTEND_URL] : ['http://localhost:5173', 'http://127.0.0.1:5173'];
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json({ limit: '5mb' }));
 
 // ── Routes ─────────────────────────────────────────────────────
 
@@ -117,5 +118,5 @@ app.listen(PORT, () => {
     console.log(`\n🌉 Bridge Server running at http://localhost:${PORT}`);
     console.log(`   Frontend URL: ${FRONTEND_URL}`);
     console.log(`   LLM Provider: ${process.env.LLM_PROVIDER || 'ollama'}`);
-    console.log(`   LLM Model:    ${process.env.LLM_MODEL || 'qwen2.5:7b'}\n`);
+    console.log(`   LLM Model:    ${process.env.LLM_MODEL || 'llama3.1:latest'}\n`);
 });

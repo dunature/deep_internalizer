@@ -6,9 +6,12 @@ import { useState, useEffect } from 'react';
 import Heatmap from './Heatmap';
 import { db } from '../../db/schema';
 import { getLLMConfig, saveLLMConfig } from '../../services/llmClient';
+import { useAppStore } from '../../stores/appStore';
 import styles from './UserProfile.module.css';
 
 export default function UserProfile({ onBack }) {
+    const vocabularyAutoNextOnAdd = useAppStore((state) => state.vocabularyAutoNextOnAdd);
+    const setVocabularyAutoNextOnAdd = useAppStore((state) => state.setVocabularyAutoNextOnAdd);
     const [stats, setStats] = useState({
         totalDocuments: 0,
         totalChunksCompleted: 0,
@@ -569,6 +572,25 @@ export default function UserProfile({ onBack }) {
                 <p className={styles.hint}>
                     Changes are saved automatically to your local browser storage.
                 </p>
+            </section>
+
+            {/* Learning Preferences */}
+            <section className={styles.preferenceSection}>
+                <h2>Learning Preferences</h2>
+                <div className={styles.preferenceRow}>
+                    <div className={styles.preferenceText}>
+                        <h3>Auto-next after adding vocabulary</h3>
+                        <p>When enabled, Step 2 jumps to the next word immediately after Add succeeds.</p>
+                    </div>
+                    <label className={styles.switch}>
+                        <input
+                            type="checkbox"
+                            checked={vocabularyAutoNextOnAdd}
+                            onChange={(e) => setVocabularyAutoNextOnAdd(e.target.checked)}
+                        />
+                        <span className={styles.slider}></span>
+                    </label>
+                </div>
             </section>
 
             {/* Data Management */}

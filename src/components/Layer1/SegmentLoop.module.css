@@ -68,6 +68,38 @@
     gap: var(--space-4);
 }
 
+.headerStep2 {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px 20px;
+}
+
+.headerStep2 .chunkTitle {
+    text-align: center;
+    color: #0f172a;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.headerStep2 .backBtn {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.headerStep2 .bilingualBtn {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+
+.headerStep2 .bilingualBtn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
 .backBtn {
     font-size: var(--text-sm);
 }
@@ -109,6 +141,14 @@
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+}
+
+.contentStep2 {
+    max-width: 860px;
+    padding: 18px 24px 28px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
 }
 
 /* Loading Spinner */
@@ -245,6 +285,68 @@
     gap: var(--space-6);
     max-width: 1100px;
     margin: 0 auto;
+}
+
+.step2Content {
+    width: min(800px, 100%);
+    gap: 18px;
+}
+
+.step2Header {
+    margin-bottom: 2px;
+}
+
+.step2Content .stepLabel {
+    color: #2563eb;
+    background: #dbeafe;
+    font-size: 0.875rem;
+    padding: 4px 12px;
+}
+
+.step2Content .stepHeader h3 {
+    color: #0f172a;
+    font-family: var(--font-sans);
+    font-size: 2rem;
+    margin-bottom: 2px;
+}
+
+.step2Content .stepDesc {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.step2Content .wordActions {
+    width: min(520px, 100%);
+    margin: 0 auto;
+    gap: 16px;
+}
+
+.step2Content .wordActions :global(.btn-secondary) {
+    background: #ffffff;
+    color: #2563eb;
+    border: 1px solid #cbd5e1;
+}
+
+.step2Content .wordActions :global(.btn-primary) {
+    background: #2563eb;
+    box-shadow: none;
+}
+
+.step2Content .skeletonCard {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    min-height: 320px;
+}
+
+.step2Content .skeletonWord,
+.step2Content .skeletonPhonetic,
+.step2Content .skeletonDefinition {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+}
+
+.step2Content .loadingSpinner p {
+    color: #64748b;
 }
 
 .stepHeader {

@@ -375,7 +375,7 @@ function App() {
 
 
   // Handle document import
-  const handleImport = async ({ title, content: rawContent, parseMetrics, aiFormatEnabled = true }) => {
+  const handleImport = async ({ title, content: rawContent, parseMetrics, aiFormatEnabled = true, llmConfig: llmConfigOverride }) => {
     let content = rawContent;
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
@@ -391,7 +391,8 @@ function App() {
     setLoading(true);
     setProcessingLogs([]);
     setProcessingStep('INITIALIZING');
-    const { provider, model } = getLLMConfig();
+    const activeLlmConfig = llmConfigOverride?.provider ? llmConfigOverride : getLLMConfig();
+    const { provider, model, baseUrl, apiKey } = activeLlmConfig;
     initProcessingMeta(content, provider, model, parseMetrics);
     markStepStart('INITIALIZING');
     addLog('Initializing import sequence...', 'active');
@@ -407,7 +408,7 @@ function App() {
       let semanticChunks = [];
       let documentSummary = '';
 
-      const contentHash = await hashText(`${provider}|${model}|${content}`);
+      const contentHash = await hashText(`${provider}|${model}|${baseUrl || ''}|${content}`);
       if (operationId !== asyncOperationIdRef.current) return;
 
       const cached = await getAnalysisCache(contentHash);
@@ -470,7 +471,16 @@ function App() {
         const analyzeStart = Date.now();
 
         const data = await bridgeClient.submitAnalysis({
-          content, title, cacheOnly: false, source: 'import-ui'
+          content,
+          title,
+          cacheOnly: false,
+          source: 'import-ui',
+          llm: {
+            provider,
+            model,
+            baseUrl,
+            apiKey
+          }
         });
 
         let bridgeResult = null;

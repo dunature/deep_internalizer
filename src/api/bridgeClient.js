@@ -188,8 +188,8 @@ export async function pollTaskStatus(taskId, { intervalMs = 3000, timeoutMs = 60
         } catch (error) {
             retryCount++;
 
-            // Log error but don't fail immediately unless it's a known task logic error
-            if (error.message.includes('Server task failed') || error.status === 404) {
+            // Fail fast for terminal task failures and backend 4xx/5xx responses.
+            if (error.message.includes('Server task failed') || error.status === 404 || (typeof error.status === 'number' && error.status >= 400)) {
                 throw error;
             }
 
