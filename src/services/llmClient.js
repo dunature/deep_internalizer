@@ -6,96 +6,134 @@
 const DEFAULT_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'deepseek';
 // Default bridge server URL fallback
 const BRIDGE_SERVER_URL = import.meta.env.VITE_BRIDGE_SERVER_URL || 'http://localhost:3737';
-// Token used to authenticate with the Bridge Server
-const BRIDGE_API_KEY = import.meta.env.VITE_BRIDGE_API_KEY || 'your_secret_key_here';
+const BRIDGE_API_KEY_STORAGE_KEY = 'deep-internalizer-bridge-api-key';
 
 const STORAGE_KEY = 'deep-internalizer-llm-config';
+
+const DEFAULT_MODELS = {
+    deepseek: import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat',
+    glm: import.meta.env.VITE_GLM_MODEL || 'glm-4.7'
+};
+
+const DEFAULT_BASE_URLS = {
+    deepseek: import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
+    glm: import.meta.env.VITE_GLM_BASE_URL || 'https://api.z.ai/api/paas/v4'
+};
+
+const DEFAULT_API_KEYS = {
+    deepseek: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
+    glm: import.meta.env.VITE_GLM_API_KEY || ''
+};
+
+function getBridgeApiKey() {
+    return localStorage.getItem(BRIDGE_API_KEY_STORAGE_KEY) || '';
+}
 
 function normalizeBaseUrl(url) {
     return url.replace(/\/+$/, '');
 }
 
+function normalizeProvider(value) {
+    const provider = (value || DEFAULT_PROVIDER).toLowerCase();
+    if (provider === 'deepseek' || provider === 'glm') {
+        return provider;
+    }
+    return 'deepseek';
+}
+
+function sanitizeConfig(config, rawProvider) {
+    const provider = normalizeProvider(config?.provider || rawProvider);
+    const migratedFromLocal = rawProvider === 'ollama';
+    const fallbackModel = DEFAULT_MODELS[provider];
+    const fallbackBaseUrl = normalizeBaseUrl(DEFAULT_BASE_URLS[provider]);
+
+    const model = migratedFromLocal || !config?.model || config.model === 'llama3.1:latest'
+        ? fallbackModel
+        : config.model;
+    const baseUrl = migratedFromLocal || !config?.baseUrl || normalizeBaseUrl(config.baseUrl) === 'http://localhost:11434'
+        ? fallbackBaseUrl
+        : normalizeBaseUrl(config.baseUrl);
+
+    return {
+        ...config,
+        provider,
+        model,
+        baseUrl,
+        apiKey: config?.apiKey || DEFAULT_API_KEYS[provider]
+    };
+}
+
 export function getLLMConfig() {
+    const fallbackProvider = normalizeProvider(DEFAULT_PROVIDER);
+    let config;
+
     // Try to load from localStorage first
     const savedConfig = localStorage.getItem(STORAGE_KEY);
     if (savedConfig) {
         try {
             const parsed = JSON.parse(savedConfig);
-            const provider = (parsed?.provider || DEFAULT_PROVIDER).toLowerCase();
-
-            if (provider === 'deepseek') {
-                return {
-                    ...parsed,
-                    provider,
-                    baseUrl: normalizeBaseUrl(parsed?.baseUrl || DEEPSEEK_BASE_URL),
-                    model: parsed?.model || DEEPSEEK_MODEL,
-                    apiKey: parsed?.apiKey || import.meta.env.VITE_DEEPSEEK_API_KEY || ''
-                };
-            }
-
-            if (provider === 'glm') {
-                return {
-                    ...parsed,
-                    provider,
-                    baseUrl: normalizeBaseUrl(parsed?.baseUrl || GLM_BASE_URL),
-                    model: parsed?.model || GLM_MODEL,
-                    apiKey: parsed?.apiKey || import.meta.env.VITE_GLM_API_KEY || ''
-                };
-            }
-
-            return {
-                ...parsed,
-                provider: 'ollama',
-                baseUrl: normalizeBaseUrl(parsed?.baseUrl || OLLAMA_BASE_URL),
-                model: parsed?.model || OLLAMA_MODEL,
-                apiKey: ''
-            };
+            config = sanitizeConfig(parsed, parsed?.provider);
         } catch (e) {
             console.error('Failed to parse saved LLM config:', e);
         }
     }
 
-    // Fallback to default configs for UI (The backend uses its own .env for the actual provider logic)
-    const provider = DEFAULT_PROVIDER.toLowerCase();
-
-    // We only need to store the provider/model string for the UI state
-    if (provider === 'deepseek') {
-        return {
-            provider,
-            model: 'deepseek-chat'
-        };
-    }
-    if (provider === 'glm') {
-        return {
-            provider,
-            model: 'glm-4.7'
-        };
+    // Fallback to default configs for UI
+    if (!config) {
+        config = sanitizeConfig({
+            provider: fallbackProvider,
+            model: DEFAULT_MODELS[fallbackProvider],
+            baseUrl: DEFAULT_BASE_URLS[fallbackProvider],
+            apiKey: DEFAULT_API_KEYS[fallbackProvider]
+        }, fallbackProvider);
     }
 
-    return {
-        provider: 'ollama',
-        model: 'llama3.1:latest'
-    };
+    if (import.meta.env.DEV && !config.apiKey) {
+        console.warn(`[LLM] Provider "${config.provider}" is missing an API key`);
+    }
+
+    return config;
 }
 
 export function saveLLMConfig(config) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    const rawProvider = config?.provider;
+    const normalized = sanitizeConfig(config, rawProvider);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
 }
 
 /**
  * Calls the backend Bridge Server proxy to process the LLM request.
  */
-async function callBridgeProxy({ system, user, temperature = 0.3, maxTokens = 2048, signal, model }) {
+async function callBridgeProxy({
+    system,
+    user,
+    temperature = 0.3,
+    maxTokens = 2048,
+    signal,
+    model,
+    provider,
+    baseUrl,
+    apiKey
+}) {
     const url = `${normalizeBaseUrl(BRIDGE_SERVER_URL)}/api/llm/chat`;
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${BRIDGE_API_KEY}`
-        },
+        headers: (() => {
+            const bridgeApiKey = getBridgeApiKey();
+            if (!bridgeApiKey) {
+                return { 'Content-Type': 'application/json' };
+            }
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${bridgeApiKey}`
+            };
+        })(),
         body: JSON.stringify({
             model,
+            provider,
+            baseUrl,
+            ...(apiKey ? { apiKey } : {}),
             system,
             user,
             temperature,
@@ -128,13 +166,16 @@ export async function callLLM({
     const config = getLLMConfig();
     const resolvedModel = model || config.model;
 
-    // Send the configured model preference to the Bridge (the bridge may override it if forced)
+    // Pass import-time/provider credentials through the Bridge proxy.
     return callBridgeProxy({
         system,
         user,
         temperature,
         maxTokens,
         signal,
-        model: resolvedModel
+        model: resolvedModel,
+        provider: config.provider,
+        baseUrl: config.baseUrl,
+        apiKey: config.apiKey
     });
 }

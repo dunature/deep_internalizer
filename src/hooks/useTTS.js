@@ -10,6 +10,7 @@ export function useTTS() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const audioRef = useRef(new Audio());
+    const utteranceRef = useRef(null);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -17,7 +18,29 @@ export function useTTS() {
         return () => {
             audio.pause();
             audio.src = '';
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
         };
+    }, []);
+
+    const speakWithBrowser = useCallback((text, speed = 1.0) => {
+        if (!window.speechSynthesis) {
+            throw new Error('Web Speech API unavailable');
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = Math.max(0.5, Math.min(2, speed));
+        utteranceRef.current = utterance;
+
+        utterance.onstart = () => setIsPlaying(true);
+        utterance.onend = () => setIsPlaying(false);
+        utterance.onerror = () => {
+            setIsPlaying(false);
+            setError('Playback failed');
+        };
+        window.speechSynthesis.speak(utterance);
     }, []);
 
     /**
@@ -69,12 +92,27 @@ export function useTTS() {
             // Play
             await audio.play();
         } catch (err) {
-            setError(err.message || 'Failed to generate speech');
+            const message = err?.message || 'Failed to generate speech';
+            // Fallback for local TTS not ready/unreachable
+            if (
+                message.includes('TTS API Error') ||
+                message.includes('Failed to fetch') ||
+                message.includes('NetworkError')
+            ) {
+                try {
+                    speakWithBrowser(text, speed);
+                    setError('Local TTS unavailable, used browser voice');
+                    return;
+                } catch {
+                    // no-op, keep original error
+                }
+            }
+            setError(message);
             setIsPlaying(false);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [speakWithBrowser]);
 
     /**
      * Speak a word (with caching)
@@ -100,6 +138,9 @@ export function useTTS() {
     const stop = useCallback(() => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
         setIsPlaying(false);
     }, []);
 

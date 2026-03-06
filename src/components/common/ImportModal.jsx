@@ -12,6 +12,17 @@ import { getAnalysisCache } from '../../db/schema';
 import ThinkingProcess from './ThinkingProcess';
 import styles from './ImportModal.module.css';
 
+const PROVIDER_DEFAULTS = {
+    deepseek: {
+        model: 'deepseek-chat',
+        baseUrl: 'https://api.deepseek.com'
+    },
+    glm: {
+        model: 'glm-4.7',
+        baseUrl: 'https://api.z.ai/api/paas/v4'
+    }
+};
+
 export default function ImportModal({
     isOpen,
     onClose,
@@ -154,12 +165,13 @@ export default function ImportModal({
         const provider = e.target.value;
         let updated = { ...llmConfig, provider };
 
-        if (provider === 'deepseek' && updated.model === 'llama3.1:latest') {
-            updated.model = 'deepseek-chat';
-        } else if (provider === 'ollama' && updated.model === 'deepseek-chat') {
-            updated.model = 'llama3.1:latest';
+        const defaults = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.deepseek;
+        if (!updated.model || updated.model === 'llama3.1:latest' || updated.model === PROVIDER_DEFAULTS.deepseek.model || updated.model === PROVIDER_DEFAULTS.glm.model) {
+            updated.model = defaults.model;
         }
-
+        if (!updated.baseUrl || updated.baseUrl === 'http://localhost:11434' || updated.baseUrl === PROVIDER_DEFAULTS.deepseek.baseUrl || updated.baseUrl === PROVIDER_DEFAULTS.glm.baseUrl) {
+            updated.baseUrl = defaults.baseUrl;
+        }
         setLlmConfig(updated);
         saveLLMConfig(updated);
     };
@@ -224,7 +236,13 @@ export default function ImportModal({
             return;
         }
 
-        onImport({ title: title.trim(), content: content.trim(), parseMetrics, aiFormatEnabled });
+        onImport({
+            title: title.trim(),
+            content: content.trim(),
+            parseMetrics,
+            aiFormatEnabled,
+            llmConfig
+        });
     };
 
     const handleClose = () => {
@@ -431,12 +449,12 @@ export default function ImportModal({
                         {/* AI Settings - collapsible */}
                         <details
                             className={styles.llmSettings}
-                            open={llmConfig.provider !== 'ollama' && !llmConfig.apiKey}
+                            open={!llmConfig.apiKey}
                         >
                             <summary className={styles.llmSettingsSummary}>
                                 ⚙️ AI Settings
                                 <span className={styles.llmProvider}>
-                                    {llmConfig.provider === 'ollama' ? 'Ollama (Local)' : 'DeepSeek (Cloud)'}
+                                    {llmConfig.provider === 'glm' ? 'GLM (Cloud)' : 'DeepSeek (Cloud)'}
                                 </span>
                             </summary>
                             <div className={styles.llmSettingsGrid}>
@@ -450,7 +468,7 @@ export default function ImportModal({
                                         disabled={isLoading || isParsing}
                                     >
                                         <option value="deepseek">DeepSeek (Cloud)</option>
-                                        <option value="ollama">Ollama (Local)</option>
+                                        <option value="glm">GLM (Cloud)</option>
                                     </select>
                                 </div>
                                 <div className={styles.llmField}>
@@ -461,6 +479,30 @@ export default function ImportModal({
                                         value={llmConfig.model}
                                         onChange={handleLlmFieldChange}
                                         placeholder="e.g. deepseek-chat"
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    />
+                                </div>
+                                <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
+                                    <label>Base URL</label>
+                                    <input
+                                        type="text"
+                                        name="baseUrl"
+                                        value={llmConfig.baseUrl || ''}
+                                        onChange={handleLlmFieldChange}
+                                        placeholder="https://api.provider.com"
+                                        className={styles.input}
+                                        disabled={isLoading || isParsing}
+                                    />
+                                </div>
+                                <div className={`${styles.llmField} ${styles.llmFieldFull}`}>
+                                    <label>API Key</label>
+                                    <input
+                                        type="password"
+                                        name="apiKey"
+                                        value={llmConfig.apiKey || ''}
+                                        onChange={handleLlmFieldChange}
+                                        placeholder="Enter API key for this import"
                                         className={styles.input}
                                         disabled={isLoading || isParsing}
                                     />

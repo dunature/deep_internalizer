@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './SegmentLoop.module.css';
 import { useTTS } from '../../hooks/useTTS';
 import { prefetchService } from '../../services/prefetchService';
+import { useAppStore } from '../../stores/appStore';
 import VocabularyCard from './VocabularyCard';
 import SentenceCard from './SentenceCard';
 
@@ -172,20 +173,22 @@ export default function SegmentLoop({
     return (
         <div className={styles.container}>
             {/* Step indicator */}
-            <div className={styles.stepIndicator}>
-                {STEPS.map((step) => (
-                    <div
-                        key={step.id}
-                        className={`${styles.step} ${currentStep === step.id ? styles.active : ''} ${currentStep > step.id ? styles.completed : ''}`}
-                    >
-                        <span className={styles.stepIcon}>{step.icon}</span>
-                        <span className={styles.stepName}>{step.name}</span>
-                    </div>
-                ))}
-            </div>
+            {currentStep !== 2 && (
+                <div className={styles.stepIndicator}>
+                    {STEPS.map((step) => (
+                        <div
+                            key={step.id}
+                            className={`${styles.step} ${currentStep === step.id ? styles.active : ''} ${currentStep > step.id ? styles.completed : ''}`}
+                        >
+                            <span className={styles.stepIcon}>{step.icon}</span>
+                            <span className={styles.stepName}>{step.name}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Chunk header */}
-            <header className={styles.header}>
+            <header className={`${styles.header} ${currentStep === 2 ? styles.headerStep2 : ''}`}>
                 <button className={`btn btn-ghost ${styles.backBtn}`} onClick={onBack}>
                     ← Back to Map
                 </button>
@@ -200,7 +203,7 @@ export default function SegmentLoop({
             </header>
 
             {/* Step content */}
-            <main className={styles.content}>
+            <main className={`${styles.content} ${currentStep === 2 ? styles.contentStep2 : ''}`}>
                 {renderStepContent()}
             </main>
         </div>
@@ -249,6 +252,7 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     const [isDeferred, setIsDeferred] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addedWords, setAddedWords] = useState(() => new Set());
+    const vocabularyAutoNextOnAdd = useAppStore((state) => state.vocabularyAutoNextOnAdd);
     const { speak, isLoading } = useTTS();
     const lastAddKeyRef = useRef(null);
     const addLockRef = useRef(false);
@@ -337,6 +341,9 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                     next.add(key);
                     return next;
                 });
+                if (vocabularyAutoNextOnAdd) {
+                    handleNext();
+                }
             }
             return result || { created: false };
         } finally {
@@ -355,8 +362,8 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     // Show loading state while keywords are being fetched
     if (isLoadingWords) {
         return (
-            <div className={styles.stepContent}>
-                <div className={styles.stepHeader}>
+            <div className={`${styles.stepContent} ${styles.step2Content}`}>
+                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
                     <span className={styles.stepLabel}>Step 2</span>
                     <h3>Vocabulary Build</h3>
                     <p className={styles.stepDesc}>AI is analyzing text...</p>
@@ -381,8 +388,8 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (isDeferred) {
         return (
-            <div className={styles.stepContent}>
-                <div className={styles.stepHeader}>
+            <div className={`${styles.stepContent} ${styles.step2Content}`}>
+                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
                     <span className={styles.stepLabel}>Step 2</span>
                     <h3>Vocabulary Build</h3>
                     <p className={styles.stepDesc}>Preparing word cards...</p>
@@ -401,8 +408,8 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (!hasWords) {
         return (
-            <div className={styles.stepContent}>
-                <div className={styles.stepHeader}>
+            <div className={`${styles.stepContent} ${styles.step2Content}`}>
+                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
                     <span className={styles.stepLabel}>Step 2</span>
                     <h3>Vocabulary Build</h3>
                     <p className={styles.stepDesc}>No key words extracted for this chunk</p>
@@ -415,8 +422,8 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     }
 
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
+        <div className={`${styles.stepContent} ${styles.step2Content}`}>
+            <div className={`${styles.stepHeader} ${styles.step2Header}`}>
                 <span className={styles.stepLabel}>Step 2</span>
                 <h3>Vocabulary Build</h3>
                 <p className={styles.stepDesc}>

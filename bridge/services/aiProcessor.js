@@ -20,10 +20,98 @@ import 'dotenv/config';
 
 // ── Configuration ──────────────────────────────────────────────
 
-const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
-const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '');
-const LLM_MODEL = process.env.LLM_MODEL || 'qwen2.5:7b';
-const LLM_API_KEY = process.env.LLM_API_KEY || '';
+const RAW_DEFAULT_PROVIDER = (process.env.LLM_PROVIDER || 'deepseek').toLowerCase();
+const DEFAULT_PROVIDER = RAW_DEFAULT_PROVIDER === 'glm' ? 'glm' : 'deepseek';
+const GENERIC_MODEL = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_MODEL : '';
+const GENERIC_BASE_URL = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_BASE_URL : '';
+const GENERIC_API_KEY = ['deepseek', 'glm'].includes(RAW_DEFAULT_PROVIDER) ? process.env.LLM_API_KEY : '';
+
+const DEFAULT_MODEL_BY_PROVIDER = {
+    deepseek: process.env.DEEPSEEK_MODEL || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_MODEL : '') || 'deepseek-chat',
+    glm: process.env.GLM_MODEL || (DEFAULT_PROVIDER === 'glm' ? GENERIC_MODEL : '') || 'glm-4.7'
+};
+const DEFAULT_BASE_URL_BY_PROVIDER = {
+    deepseek: process.env.DEEPSEEK_BASE_URL || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_BASE_URL : '') || 'https://api.deepseek.com',
+    glm: process.env.GLM_BASE_URL || (DEFAULT_PROVIDER === 'glm' ? GENERIC_BASE_URL : '') || 'https://api.z.ai/api/paas/v4'
+};
+const DEFAULT_API_KEY_BY_PROVIDER = {
+    deepseek: process.env.DEEPSEEK_API_KEY || (DEFAULT_PROVIDER === 'deepseek' ? GENERIC_API_KEY : '') || '',
+    glm: process.env.GLM_API_KEY || (DEFAULT_PROVIDER === 'glm' ? GENERIC_API_KEY : '') || ''
+};
+const DEFAULT_LLM_REQUEST_TIMEOUT_MS = 180000;
+const parsedRequestTimeout = Number.parseInt(process.env.LLM_REQUEST_TIMEOUT_MS || '', 10);
+const LLM_REQUEST_TIMEOUT_MS = Number.isFinite(parsedRequestTimeout) && parsedRequestTimeout > 0
+    ? parsedRequestTimeout
+    : DEFAULT_LLM_REQUEST_TIMEOUT_MS;
+const MAX_SUMMARY_HINT_CHARS = Number.parseInt(process.env.CHUNKING_SUMMARY_HINT_MAX_CHARS || '1200', 10);
+const CHUNKING_BASE_MAX_TOKENS = 2048;
+const CHUNKING_MAX_TOKENS_CAP = Number.parseInt(process.env.CHUNKING_MAX_TOKENS_CAP || '6144', 10);
+const LOCAL_FALLBACK_CHUNK_SIZE = Math.max(3, Number.parseInt(process.env.LOCAL_FALLBACK_CHUNK_SIZE || '5', 10));
+
+class AnalysisError extends Error {
+    constructor(message, { stage = 'unknown', reason = 'unknown', retryable = false, details = null } = {}) {
+        super(message);
+        this.name = 'AnalysisError';
+        this.stage = stage;
+        this.reason = reason;
+        this.retryable = retryable;
+        this.details = details;
+    }
+}
+
+function normalizeProvider(provider) {
+    const value = String(provider || DEFAULT_PROVIDER).toLowerCase();
+    if (value === 'deepseek' || value === 'glm') {
+        return value;
+    }
+    return 'deepseek';
+}
+
+function normalizeBaseUrl(url) {
+    return String(url || '').replace(/\/+$/, '');
+}
+
+function resolveLLMConfig(options = {}) {
+    const provider = normalizeProvider(options.provider);
+    const migratedFromLocal = String(options.provider || '').toLowerCase() === 'ollama';
+    const rawKey = (options.apiKey && options.apiKey.trim()) || DEFAULT_API_KEY_BY_PROVIDER[provider];
+
+    if (migratedFromLocal) {
+        console.warn('[LLM] Ignoring legacy local-model config and using DeepSeek defaults');
+    }
+
+    const model = migratedFromLocal || !options.model || options.model === 'llama3.1:latest'
+        ? DEFAULT_MODEL_BY_PROVIDER[provider]
+        : options.model;
+    const baseUrl = migratedFromLocal || !options.baseUrl || normalizeBaseUrl(options.baseUrl) === 'http://localhost:11434'
+        ? DEFAULT_BASE_URL_BY_PROVIDER[provider]
+        : options.baseUrl;
+
+    return {
+        provider,
+        model,
+        baseUrl: normalizeBaseUrl(baseUrl),
+        apiKey: rawKey
+    };
+}
+
+function isAbortError(error) {
+    return error?.name === 'AbortError' || error?.name === 'TimeoutError' || String(error?.message || '').includes('aborted');
+}
+
+async function fetchWithLlmTimeout(url, options = {}, timeoutMs = LLM_REQUEST_TIMEOUT_MS) {
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: AbortSignal.timeout(timeoutMs)
+        });
+    } catch (error) {
+        if (isAbortError(error)) {
+            throw new Error(`LLM request timed out after ${timeoutMs}ms`);
+        }
+        throw error;
+    }
+}
 
 // ── Prompts (mirrored from chunkingService.js) ─────────────────
 
@@ -104,42 +192,41 @@ function tokenizeSentences(text) {
 
 // ── LLM Call ───────────────────────────────────────────────────
 
-export async function callLLM({ system, user, temperature = 0.3, maxTokens = 2048 }) {
-    if (LLM_PROVIDER === 'ollama') {
-        const prompt = system ? `${system}\n\n${user}` : user;
-        const res = await fetch(`${LLM_BASE_URL}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: LLM_MODEL,
-                prompt,
-                stream: false,
-                options: { temperature, num_predict: maxTokens }
-            })
-        });
-        if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
-        const data = await res.json();
-        return data.response;
-    }
+export async function callLLM({
+    system,
+    user,
+    temperature = 0.3,
+    maxTokens = 2048,
+    responseFormat,
+    model,
+    provider,
+    baseUrl,
+    apiKey
+}) {
+    const config = resolveLLMConfig({ model, provider, baseUrl, apiKey });
 
-    // OpenAI-compatible (DeepSeek, GLM, etc.)
-    if (!LLM_API_KEY) throw new Error('LLM_API_KEY is required for non-Ollama providers');
+    // OpenAI-compatible (DeepSeek, GLM)
+    if (!config.apiKey) throw new Error(`API key is required for provider "${config.provider}"`);
     const messages = system
         ? [{ role: 'system', content: system }, { role: 'user', content: user }]
         : [{ role: 'user', content: user }];
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+    const payload = {
+        model: config.model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        stream: false
+    };
+    if (responseFormat) {
+        payload.response_format = responseFormat;
+    }
+    const res = await fetchWithLlmTimeout(`${config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${LLM_API_KEY}`
+            Authorization: `Bearer ${config.apiKey}`
         },
-        body: JSON.stringify({
-            model: LLM_MODEL,
-            messages,
-            temperature,
-            max_tokens: maxTokens,
-            stream: false
-        })
+        body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || `LLM error: ${res.status}`);
@@ -150,32 +237,269 @@ export async function callLLM({ system, user, temperature = 0.3, maxTokens = 204
 
 // ── JSON parser (handles markdown fences) ──────────────────────
 
-function parseJsonResponse(response) {
-    let cleaned = response.trim();
-    // Strip markdown code fences
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+function sanitizeJsonString(text) {
+    return String(text || '')
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+}
 
-    // Try to extract JSON array from messy response
-    const start = cleaned.indexOf('[');
-    const end = cleaned.lastIndexOf(']');
+function extractJsonCandidates(raw) {
+    const cleaned = sanitizeJsonString(raw);
+    const candidates = [];
 
-    if (start === -1 || end === -1 || start >= end) {
-        throw new Error('No valid JSON array found in response');
+    if (cleaned) candidates.push(cleaned);
+
+    const objectStart = cleaned.indexOf('{');
+    const objectEnd = cleaned.lastIndexOf('}');
+    if (objectStart !== -1 && objectEnd !== -1 && objectStart < objectEnd) {
+        candidates.push(cleaned.substring(objectStart, objectEnd + 1));
     }
 
-    cleaned = cleaned.substring(start, end + 1);
+    const arrayStart = cleaned.indexOf('[');
+    const arrayEnd = cleaned.lastIndexOf(']');
+    if (arrayStart !== -1 && arrayEnd !== -1 && arrayStart < arrayEnd) {
+        candidates.push(cleaned.substring(arrayStart, arrayEnd + 1));
+    }
+
+    return [...new Set(candidates.filter(Boolean))];
+}
+
+function parseJsonLoose(text) {
+    const attempt = sanitizeJsonString(text);
+    try {
+        return JSON.parse(attempt);
+    } catch {
+        const fixed = attempt
+            .replace(/'/g, '"')
+            .replace(/,\s*([}\]])/g, '$1');
+        return JSON.parse(fixed);
+    }
+}
+
+function parseJsonResponse(response) {
+    const candidates = extractJsonCandidates(response);
+    let lastError = null;
+
+    for (const candidate of candidates) {
+        try {
+            return parseJsonLoose(candidate);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    const message = lastError ? `Failed to parse JSON payload: ${lastError.message}` : 'No valid JSON payload found in response';
+    throw new Error(message);
+}
+
+function normalizeChunksPayload(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.chunks)) return payload.chunks;
+    if (payload && payload.data && Array.isArray(payload.data.chunks)) return payload.data.chunks;
+    if (payload && payload.result && Array.isArray(payload.result.chunks)) return payload.result.chunks;
+    throw new Error('No valid chunks array found in response payload');
+}
+
+function normalizeChunk(chunk, sentenceCount) {
+    if (!chunk || typeof chunk !== 'object') return null;
+    const start = Number.parseInt(chunk.startIndex, 10);
+    const end = Number.parseInt(chunk.endIndex, 10);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+
+    const clampedStart = Math.max(0, Math.min(sentenceCount - 1, start));
+    const clampedEnd = Math.max(0, Math.min(sentenceCount - 1, end));
+    if (clampedStart > clampedEnd) return null;
+
+    return {
+        title: String(chunk.title || '').trim() || 'Untitled Chunk',
+        summary: String(chunk.summary || '').trim(),
+        summary_zh: String(chunk.summary_zh || '').trim(),
+        startIndex: clampedStart,
+        endIndex: clampedEnd
+    };
+}
+
+function fallbackChunkSummary(sentences, start, end) {
+    return sentences.slice(start, Math.min(end + 1, start + 2)).join(' ').trim();
+}
+
+function buildDeterministicChunks(sentences, chunkSize = LOCAL_FALLBACK_CHUNK_SIZE) {
+    const chunks = [];
+    for (let start = 0, index = 1; start < sentences.length; start += chunkSize, index += 1) {
+        const end = Math.min(start + chunkSize - 1, sentences.length - 1);
+        chunks.push({
+            title: `Chunk ${index}`,
+            summary: fallbackChunkSummary(sentences, start, end),
+            summary_zh: '',
+            startIndex: start,
+            endIndex: end
+        });
+    }
+    return chunks;
+}
+
+function ensureChunkCoverage(chunks, sentences) {
+    const sentenceCount = sentences.length;
+    const normalized = chunks
+        .map(chunk => normalizeChunk(chunk, sentenceCount))
+        .filter(Boolean)
+        .sort((a, b) => a.startIndex - b.startIndex);
+
+    if (!normalized.length) return buildDeterministicChunks(sentences);
+
+    const covered = [];
+    let previousEnd = -1;
+    for (const chunk of normalized) {
+        const adjustedStart = Math.max(chunk.startIndex, previousEnd + 1);
+        if (adjustedStart > chunk.endIndex) continue;
+        covered.push({ ...chunk, startIndex: adjustedStart });
+        previousEnd = chunk.endIndex;
+    }
+    if (!covered.length) return buildDeterministicChunks(sentences);
+
+    const completed = [];
+    let cursor = 0;
+    for (const chunk of covered) {
+        if (chunk.startIndex > cursor) {
+            completed.push(...buildDeterministicChunks(sentences.slice(cursor, chunk.startIndex)).map((c, idx) => ({
+                ...c,
+                title: `Chunk F${completed.length + idx + 1}`,
+                startIndex: c.startIndex + cursor,
+                endIndex: c.endIndex + cursor
+            })));
+        }
+        completed.push(chunk);
+        cursor = chunk.endIndex + 1;
+    }
+    if (cursor < sentenceCount) {
+        completed.push(...buildDeterministicChunks(sentences.slice(cursor)).map((c, idx) => ({
+            ...c,
+            title: `Chunk F${completed.length + idx + 1}`,
+            startIndex: c.startIndex + cursor,
+            endIndex: c.endIndex + cursor
+        })));
+    }
+
+    return completed.map((chunk, index) => ({
+        ...chunk,
+        title: chunk.title || `Chunk ${index + 1}`,
+        summary: chunk.summary || fallbackChunkSummary(sentences, chunk.startIndex, chunk.endIndex)
+    }));
+}
+
+function extractRawSnippet(raw, max = 280) {
+    const text = sanitizeJsonString(raw);
+    if (text.length <= max * 2) return text;
+    return `${text.slice(0, max)} ... ${text.slice(-max)}`;
+}
+
+function logChunkingDiagnostic({
+    taskId = null,
+    config,
+    sentenceCount,
+    maxTokens,
+    rawResponse,
+    reason
+}) {
+    console.warn('[AI][Diagnostic]', JSON.stringify({
+        stage: 'chunking_parse',
+        reason,
+        taskId,
+        provider: config.provider,
+        model: config.model,
+        sentenceCount,
+        maxTokens,
+        responseLength: String(rawResponse || '').length,
+        rawSnippet: extractRawSnippet(rawResponse, 200)
+    }));
+}
+
+function getChunkingMaxTokens(sentenceCount) {
+    const calculated = CHUNKING_BASE_MAX_TOKENS + sentenceCount * 20;
+    return Math.max(CHUNKING_BASE_MAX_TOKENS, Math.min(CHUNKING_MAX_TOKENS_CAP, calculated));
+}
+
+async function attemptChunkingFormatRepair({ response, sentenceCount, config }) {
+    const repairPrompt = `Repair the malformed JSON into a valid JSON object with this exact shape:
+{"chunks":[{"title":"...","summary":"...","summary_zh":"...","startIndex":0,"endIndex":2}]}
+Rules:
+- Keep the same chunk meaning and index boundaries as much as possible.
+- Return JSON only, no markdown.`;
+
+    return callLLM({
+        system: repairPrompt,
+        user: `Sentence count: ${sentenceCount}\nMalformed output:\n${String(response || '').substring(0, 6000)}`,
+        temperature: 0,
+        maxTokens: Math.min(3000, getChunkingMaxTokens(sentenceCount)),
+        responseFormat: { type: 'json_object' },
+        ...config
+    });
+}
+
+async function callChunkingLLM({ text, summary, sentences, config, taskId }) {
+    const maxTokens = getChunkingMaxTokens(sentences.length);
+    const summaryHint = String(summary || '').replace(/\s+/g, ' ').trim().slice(0, MAX_SUMMARY_HINT_CHARS);
+    const summaryBlock = summaryHint ? `Document summary (for guidance):\n${summaryHint}\n\n` : '';
+    const user = `${summaryBlock}Text to analyze (${sentences.length} sentences):\n${text}`;
+
+    let response;
+    try {
+        response = await callLLM({
+            system: CHUNKING_SYSTEM_PROMPT,
+            user,
+            temperature: 0,
+            maxTokens,
+            responseFormat: { type: 'json_object' },
+            ...config
+        });
+    } catch (error) {
+        if (!String(error?.message || '').toLowerCase().includes('response_format')) {
+            throw error;
+        }
+        response = await callLLM({
+            system: CHUNKING_SYSTEM_PROMPT,
+            user,
+            temperature: 0,
+            maxTokens,
+            ...config
+        });
+    }
 
     try {
-        return JSON.parse(cleaned);
-    } catch (e) {
-        // Try to fix common JSON issues (unquoted keys, single quotes, etc.)
+        return normalizeChunksPayload(parseJsonResponse(response));
+    } catch {
+        logChunkingDiagnostic({
+            taskId,
+            config,
+            sentenceCount: sentences.length,
+            maxTokens,
+            rawResponse: response,
+            reason: 'first_parse_failed'
+        });
+
         try {
-            const fixed = cleaned
-                .replace(/'/g, '"')  // Replace single quotes with double quotes
-                .replace(/(\w+):/g, '"$1":');  // Quote unquoted keys
-            return JSON.parse(fixed);
-        } catch (e2) {
-            throw new Error(`Failed to parse LLM JSON: ${e.message}. Raw: ${cleaned.substring(0, 200)}...`);
+            const repaired = await attemptChunkingFormatRepair({ response, sentenceCount: sentences.length, config });
+            return normalizeChunksPayload(parseJsonResponse(repaired));
+        } catch (repairError) {
+            logChunkingDiagnostic({
+                taskId,
+                config,
+                sentenceCount: sentences.length,
+                maxTokens,
+                rawResponse: response,
+                reason: `repair_failed:${repairError.message}`
+            });
+            throw new AnalysisError('No valid JSON array found in response', {
+                stage: 'chunking_parse',
+                reason: 'invalid_json',
+                retryable: false,
+                details: {
+                    maxTokens,
+                    sentenceCount: sentences.length,
+                    rawSnippet: extractRawSnippet(response)
+                }
+            });
         }
     }
 }
@@ -191,18 +515,22 @@ function parseJsonResponse(response) {
  * @param {string} text - Raw document text
  * @returns {{ coreThesis: string, summary: string, model: string, chunks: Array }}
  */
-export async function analyzeContent(text) {
+export async function analyzeContent(text, llmOptions = {}) {
     const sentences = tokenizeSentences(text);
     if (sentences.length === 0) throw new Error('No sentences found in text');
 
-    console.log(`[AI] Analyzing ${sentences.length} sentences with ${LLM_PROVIDER}/${LLM_MODEL}...`);
+    const taskId = llmOptions?.taskId || null;
+    const config = resolveLLMConfig(llmOptions);
+    const warnings = [];
+    console.log(`[AI] Analyzing ${sentences.length} sentences with ${config.provider}/${config.model}...`);
 
     // Step 1: Generate document summary (guides chunking quality)
     let summary = '';
     try {
         summary = await callLLM({
             system: DOCUMENT_SUMMARY_PROMPT,
-            user: `Text:\n${text.substring(0, 3000)}`
+            user: `Text:\n${text.substring(0, 3000)}`,
+            ...config
         });
         summary = summary.trim();
         console.log('[AI] Document summary generated.');
@@ -213,7 +541,8 @@ export async function analyzeContent(text) {
     // Step 2: Core thesis
     const coreThesis = await callLLM({
         system: CORE_THESIS_PROMPT,
-        user: `Text:\n${text.substring(0, 2000)}`
+        user: `Text:\n${text.substring(0, 2000)}`,
+        ...config
     });
     console.log('[AI] Core thesis generated.');
 
@@ -229,15 +558,29 @@ export async function analyzeContent(text) {
             originalText: text
         }];
     } else {
-        const summaryBlock = summary ? `Document summary (for guidance):\n${summary}\n\n` : '';
-        const response = await callLLM({
-            system: CHUNKING_SYSTEM_PROMPT,
-            user: `${summaryBlock}Text to analyze (${sentences.length} sentences):\n${text}`
-        });
-        chunks = parseJsonResponse(response);
-        // Enrich with original text
-        chunks = chunks.map(chunk => ({
-            ...chunk,
+        try {
+            const rawChunks = await callChunkingLLM({ text, summary, sentences, config, taskId });
+            chunks = ensureChunkCoverage(rawChunks, sentences);
+        } catch (error) {
+            if (!(error instanceof AnalysisError)) {
+                throw error;
+            }
+            warnings.push({
+                code: 'CHUNKING_FALLBACK',
+                stage: error.stage,
+                message: 'AI chunking format was invalid. Applied deterministic fallback chunking.',
+                details: error.details || null
+            });
+            console.warn('[AI] Chunking fallback activated due to parse failure.');
+            chunks = buildDeterministicChunks(sentences);
+        }
+
+        chunks = chunks.map((chunk, index) => ({
+            title: chunk.title || `Chunk ${index + 1}`,
+            summary: chunk.summary || fallbackChunkSummary(sentences, chunk.startIndex, chunk.endIndex),
+            summary_zh: chunk.summary_zh || '',
+            startIndex: chunk.startIndex,
+            endIndex: chunk.endIndex,
             originalText: sentences.slice(chunk.startIndex, chunk.endIndex + 1).join(' ')
         }));
     }
@@ -250,7 +593,7 @@ export async function analyzeContent(text) {
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         try {
-            const vocab = await extractVocabulary(chunk.originalText);
+            const vocab = await extractVocabulary(chunk.originalText, config);
             console.log(`[AI] Chunk ${i + 1}: extracted ${vocab.length} words`);
             chunkWithVocab.push({ ...chunk, vocabulary: vocab });
         } catch (err) {
@@ -264,8 +607,9 @@ export async function analyzeContent(text) {
     return {
         coreThesis: coreThesis.trim(),
         summary,
-        model: `${LLM_PROVIDER}/${LLM_MODEL}`,
-        chunks: chunkWithVocab
+        model: `${config.provider}/${config.model}`,
+        chunks: chunkWithVocab,
+        warnings
     };
 }
 
@@ -274,24 +618,19 @@ export async function analyzeContent(text) {
  * @param {string} text - The text to extract vocabulary from
  * @returns {Promise<Array>} Array of vocabulary items
  */
-export async function extractVocabulary(text) {
+export async function extractVocabulary(text, llmOptions = {}) {
     if (!text || text.trim().length === 0) return [];
+    const config = resolveLLMConfig(llmOptions);
 
-    // Use smaller model for faster vocabulary extraction
-    const savedModel = process.env.LLM_MODEL;
-    process.env.LLM_MODEL = 'qwen3:4b';
-
-    try {
-        const response = await callLLM({
-            system: VOCABULARY_EXTRACTION_PROMPT,
-            user: `Paragraph:\n${text.substring(0, 1000)}`,
-            temperature: 0.3,
-            maxTokens: 1500
-        });
-        return parseJsonResponse(response);
-    } finally {
-        if (savedModel) process.env.LLM_MODEL = savedModel;
-    }
+    const response = await callLLM({
+        system: VOCABULARY_EXTRACTION_PROMPT,
+        user: `Paragraph:
+${text.substring(0, 1000)}`,
+        temperature: 0.3,
+        maxTokens: 1500,
+        ...config
+    });
+    return parseJsonResponse(response);
 }
 
 export default { analyzeContent };

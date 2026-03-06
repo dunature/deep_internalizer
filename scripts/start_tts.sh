@@ -26,9 +26,21 @@ fi
 # Activate venv
 source "$VENV_DIR/bin/activate"
 
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
+# Install dependencies only when requirements change
+REQ_HASH_FILE="$VENV_DIR/.requirements.sha256"
+CURRENT_HASH="$(shasum -a 256 requirements.txt | awk '{print $1}')"
+SAVED_HASH=""
+if [ -f "$REQ_HASH_FILE" ]; then
+    SAVED_HASH="$(cat "$REQ_HASH_FILE")"
+fi
+
+if [ "$CURRENT_HASH" != "$SAVED_HASH" ] || [ "${FORCE_PIP_INSTALL:-0}" = "1" ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    echo "$CURRENT_HASH" > "$REQ_HASH_FILE"
+else
+    echo "Dependencies unchanged, skipping pip install."
+fi
 
 # Start server
 echo "Starting TTS server on port 8000..."

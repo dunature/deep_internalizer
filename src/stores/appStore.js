@@ -16,6 +16,7 @@ export const useAppStore = create(
             isDebtCleared: true,
             pendingWordCount: 0,
             emergencyAccessLeft: 3,
+            vocabularyAutoNextOnAdd: false,
 
             // UI state
             isLoading: false,
@@ -37,6 +38,10 @@ export const useAppStore = create(
             }),
 
             setCurrentStep: (step) => set({ currentStep: step }),
+
+            setVocabularyAutoNextOnAdd: (value) => set({
+                vocabularyAutoNextOnAdd: Boolean(value)
+            }),
 
             toggleLayer0: () => set((state) => ({
                 showLayer0: !state.showLayer0
@@ -91,7 +96,8 @@ export const useAppStore = create(
         {
             name: 'deep-internalizer-storage',
             partialize: (state) => ({
-                emergencyAccessLeft: state.emergencyAccessLeft
+                emergencyAccessLeft: state.emergencyAccessLeft,
+                vocabularyAutoNextOnAdd: state.vocabularyAutoNextOnAdd
             })
         }
     )

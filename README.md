@@ -73,17 +73,25 @@ VITE_DEEPSEEK_API_KEY=你的_API_密钥
 
 > 免费获取 DeepSeek API 密钥：[https://platform.deepseek.com](https://platform.deepseek.com)
 
-### 步骤 3：启动应用
+### 步骤 3：启动服务
 ```bash
+# 终端 1：前端
 npm run dev
-# 打开 http://localhost:5173
+
+# 终端 2：Bridge（导入分析必需）
+npm --prefix bridge run start
 ```
 
 ### 步骤 4：导入你的第一份文档
 1. 点击 **"+ New"** 按钮
 2. 上传 PDF、DOCX，或粘贴文本
-3. 观察 AI 生成语义地图
-4. 选择一个切片，开始 4 步沉浸循环
+3. 在 **⚙️ AI Settings** 中可直接填写/切换：
+   - Provider
+   - Model
+   - Base URL
+   - API Key（云端模型）
+4. 观察 AI 生成语义地图
+5. 选择一个切片，开始 4 步沉浸循环
 
 🎉 **恭喜！** 你刚刚体验了深度阅读。
 
@@ -286,6 +294,8 @@ ollama pull llama3.1:latest
 ```bash
 ./scripts/start_tts.sh
 # API 运行在 http://localhost:8000
+# 健康检查: http://localhost:8000/health
+# 模型状态: http://localhost:8000/v1/models
 ```
 
 ##### 步骤 4：配置应用（`.env.local`）
@@ -297,7 +307,11 @@ VITE_TTS_API_URL=http://localhost:8000/v1/audio/speech
 
 ##### 步骤 5：启动应用
 ```bash
+# 终端 1：前端
 npm run dev
+
+# 终端 2：Bridge
+npm --prefix bridge run start
 ```
 
 **优势**：100% 离线，隐私，无限使用
@@ -368,7 +382,30 @@ python server.py
 ```
 
 **模型**：Kokoro-TTS（8200万参数，自然语音）  
-**API**：OpenAI 兼容（`/v1/audio/speech`）
+**API**：OpenAI 兼容（`/v1/audio/speech`）  
+**探活**：`/health`、`/v1/models`（推荐前端用 `/v1/models`）
+
+---
+
+### 🚀 完整服务启动（推荐）
+
+每次本地开发建议同时启动 3 个服务：
+
+```bash
+# 终端 1：前端
+npm run dev
+
+# 终端 2：Bridge
+npm --prefix bridge run start
+
+# 终端 3：TTS
+./scripts/start_tts.sh
+```
+
+默认地址：
+- 前端：http://localhost:5173
+- Bridge：http://localhost:3737/api/health
+- TTS：http://localhost:8000/health
 
 ---
 

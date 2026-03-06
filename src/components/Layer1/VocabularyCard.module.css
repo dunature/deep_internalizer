@@ -1,266 +1,325 @@
-/* Flip Card Architecture */
-.cardScene {
-    perspective: 1000px;
-    width: 60%;
-    height: 520px;
-    /* Main height definition */
-    margin: 0 auto var(--space-8);
-}
+/* VocabularyCard — Refined per Variant 9 design spec */
 
-.cardObject {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
-    transform-style: preserve-3d;
-    cursor: pointer;
-}
-
-.cardObject.flipped {
-    transform: rotateY(180deg);
-}
-
-.cardFaceFront,
-.cardFaceBack {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    /* Safari */
-    border-radius: var(--radius-xl);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    /* Slightly more visible border */
-    background: var(--color-bg-secondary);
-    box-shadow: var(--shadow-lg);
-    /* Larger shadow for depth */
+.cardShell {
+    width: min(520px, 100%);
+    min-height: 320px;
+    margin: 0 auto;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
 }
 
-.cardFaceBack {
-    overflow-y: auto;
-}
+/* ─── Front: word + phonetic + audio ─── */
 
-/* Front Face Styles */
-.cardFaceFront {
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(145deg, var(--color-bg-secondary) 0%, var(--color-bg-elevated) 100%);
-}
-
-.frontContent {
-    flex: 1;
+.cardHeader {
+    padding: 24px 24px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
 }
 
-.frontWord {
-    font-size: 4rem;
-    /* Scaled back slightly for better fit */
-    font-weight: 800;
-    color: var(--color-text-primary);
-    font-family: var(--font-sans);
-    /* User requested San-serif */
-    letter-spacing: -0.02em;
-    margin-bottom: var(--space-4);
-    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+.mainWord {
+    margin: 0;
+    color: #0f172a;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-size: clamp(2rem, 5vw, 2.125rem);
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    cursor: pointer;
+    transition: color 0.2s ease;
 }
 
-.phoneticRowFront {
+.mainWord:active {
+    color: #2563eb;
+}
+
+.phoneticRow {
     display: flex;
-    gap: var(--space-4);
     align-items: center;
-    margin-bottom: var(--space-6);
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.syllableContainerFront {
-    display: flex;
-    gap: 16px;
-    /* Increased gap for columns */
-    margin-bottom: var(--space-6);
-    flex-wrap: wrap;
+.phoneticText {
+    color: #64748b;
+    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.audioBtn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.audioBtn:hover {
+    transform: scale(1.1);
+}
+
+.audioBtn:active {
+    transform: scale(0.95);
+}
+
+.audioBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.scissorBtn {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 1rem;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.scissorBtn.active,
+.scissorBtn:hover {
+    opacity: 1;
+    color: #2563eb;
+}
+
+/* ─── Syllable split ─── */
+
+.syllableContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
 }
 
 .syllableColumn {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 4px;
     cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.syllableColumn:hover {
-    transform: translateY(-2px);
-}
-
-.syllablePhonetic {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    margin-top: 4px;
-    opacity: 0.8;
-}
-
-.frontHint {
-    opacity: 0.5;
-    font-size: 0.875rem;
-    animation: pulse 2s infinite;
-    margin-top: var(--space-4);
-}
-
-
-
-/* Back Face Styles */
-.cardFaceBack {
-    transform: rotateY(180deg);
-    padding: var(--space-6) var(--space-8);
-    justify-content: flex-start;
-    text-align: left;
-}
-
-.cardBackHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-3);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: var(--space-3);
-}
-
-.headerLeft {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-}
-
-.backWord {
-    font-size: var(--text-2xl);
-    font-weight: 700;
-    font-family: var(--font-sans);
-}
-
-.audioBtn {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--border-color);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.audioBtn:hover {
-    background: var(--color-accent-primary);
-    color: white;
-}
-
-.posTag {
-    font-family: var(--font-serif);
-    font-style: italic;
-    color: var(--color-text-muted);
-    font-size: var(--text-lg);
-}
-
-.phoneticRow {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
-}
-
-.phoneticText {
-    font-family: var(--font-mono);
-    color: var(--color-accent-secondary);
-    font-size: var(--text-xl);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 12px;
-    border-radius: var(--radius-sm);
-}
-
-.scissorBtn {
-    background: transparent;
-    border: none;
-    font-size: 1.25rem;
-    cursor: pointer;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-.scissorBtn:hover,
-.scissorBtn.active {
-    opacity: 1;
-}
-
-/* Definition */
-.definitionSection {
-    margin-bottom: var(--space-6);
-}
-
-.definitionEn {
-    font-size: var(--text-xl);
-    color: var(--color-text-primary);
-    line-height: 1.5;
-    margin-bottom: var(--space-2);
-}
-
-.definitionCn {
-    font-size: var(--text-lg);
-    color: var(--color-text-muted);
-}
-
-/* Examples */
-.exampleSection {
-    background: var(--color-bg-elevated);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
-    flex: 1;
-    overflow-y: auto;
-}
-
-.exampleItem {
-    font-size: var(--text-base);
-    line-height: 1.6;
-    color: var(--color-text-secondary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin-bottom: var(--space-4);
-}
-
-.syllableContainer {
-    display: flex;
-    gap: 8px;
-    margin-bottom: var(--space-4);
 }
 
 .syllableChip {
-    padding: 4px 12px;
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .syllableChip.playing {
-    background: var(--color-accent-primary);
-    color: white;
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
 }
 
-@keyframes pulse {
+.syllablePhonetic {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+}
 
-    0%,
-    100% {
-        opacity: 0.5;
+/* ─── Back: pos + definition + example ─── */
+
+.cardBody {
+    padding: 0 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cardMetaRow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 20px;
+}
+
+.posTag {
+    color: #64748b;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.divider {
+    width: 100%;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.definitionSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.definitionEn {
+    margin: 0;
+    color: #334155;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+}
+
+.zhContainer {
+    min-height: 22px;
+}
+
+.definitionCn {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.revealBtn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.revealBtn:hover {
+    background: #f1f5f9;
+}
+
+.exampleSection {
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.exampleItem {
+    color: #334155;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 768px) {
+    .cardShell {
+        width: 100%;
+        min-height: 0;
     }
 
-    50% {
-        opacity: 1;
+    .cardHeader {
+        padding: 20px 16px 12px;
+    }
+
+    .cardBody {
+        padding: 0 16px 16px;
+    }
+}
+
+/* ─── Dark Mode ─── */
+
+@media (prefers-color-scheme: dark) {
+    .cardShell {
+        background: linear-gradient(180deg, #182338 0%, #121b2b 100%);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.40);
+    }
+
+    .mainWord {
+        color: #e2e8f0;
+    }
+
+    .mainWord:active {
+        color: #60a5fa;
+    }
+
+    .phoneticText {
+        color: #d5dde8;
+    }
+
+    .audioBtn {
+        background: #4f7dba;
+        color: #0f172a;
+    }
+
+    .scissorBtn {
+        color: #94a3b8;
+    }
+
+    .scissorBtn.active,
+    .scissorBtn:hover {
+        color: #60a5fa;
+    }
+
+    .syllableChip {
+        border-color: #334155;
+        background: #1e293b;
+        color: #93c5fd;
+    }
+
+    .syllableChip.playing {
+        background: #4f7dba;
+        border-color: #4f7dba;
+        color: #0f172a;
+    }
+
+    .syllablePhonetic {
+        color: #94a3b8;
+    }
+
+    .posTag {
+        color: #d5dde8;
+    }
+
+    .divider {
+        background: #334155;
+    }
+
+    .definitionEn {
+        color: #f1f5f9;
+    }
+
+    .definitionCn {
+        color: #94a3b8;
+    }
+
+    .revealBtn {
+        border-color: #475569;
+        background: #1e293b;
+        color: #e2e8f0;
+    }
+
+    .revealBtn:hover {
+        background: #334155;
+    }
+
+    .exampleSection {
+        background: #0b1220;
+    }
+
+    .exampleItem {
+        color: #f1f5f9;
     }
 }

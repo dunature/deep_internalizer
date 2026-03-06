@@ -6,6 +6,7 @@ Uses the high-quality, lightweight Kokoro model for natural speech
 
 import os
 import io
+import asyncio
 import uvicorn
 import numpy as np
 import soundfile as sf
@@ -51,6 +52,8 @@ async def speech_preflight(request: Request):
 
 # Global model holder
 tts_model = None
+tss_model_error = None
+tts_model_loading = False
 SAMPLE_RATE = 24000
 
 # Voice presets (Qwen3-TTS uses voice descriptions)
@@ -67,7 +70,7 @@ VOICE_PRESETS = {
 
 def load_model():
     """Load Kokoro-TTS model using KPipeline"""
-    global tts_model
+    global tts_model, tss_model_error
     
     try:
         from kokoro import KPipeline
@@ -80,9 +83,11 @@ def load_model():
         tts_model = KPipeline(lang_code='a', device=device)
         
         print("✓ Kokoro-TTS pipeline initialized successfully")
+        tss_model_error = None
         
     except Exception as e:
         print(f"⚠ Failed to load Kokoro-TTS: {e}")
+        tss_model_error = str(e)
         import traceback
         traceback.print_exc()
 
@@ -92,7 +97,18 @@ def load_model():
 
 @app.on_event("startup")
 async def startup_event():
-    load_model()
+    global tts_model_loading
+    tts_model_loading = True
+
+    async def _load_in_background():
+        global tts_model_loading
+        try:
+            await asyncio.to_thread(load_model)
+        finally:
+            tts_model_loading = False
+
+    # Keep API responsive while model initializes.
+    asyncio.create_task(_load_in_background())
 
 
 class SpeechRequest(BaseModel):
@@ -117,9 +133,11 @@ async def generate_speech(request: SpeechRequest):
     voice_desc = VOICE_PRESETS.get(request.voice, VOICE_PRESETS["default"])
     
     if tts_model is None:
-        # Fallback: generate silence if model not loaded
-        print("⚠ Model not loaded, returning silence")
-        audio_data = np.zeros(int(SAMPLE_RATE * 0.5), dtype=np.float32)
+        if tts_model_loading:
+            raise HTTPException(status_code=503, detail="TTS model is still loading")
+        if tss_model_error:
+            raise HTTPException(status_code=500, detail=f"TTS model load failed: {tss_model_error}")
+        raise HTTPException(status_code=503, detail="TTS model is not ready")
     else:
         try:
             # Kokoro generation
@@ -176,7 +194,26 @@ async def health_check():
         "status": "ok",
         "model": "Kokoro-82M",
         "model_loaded": tts_model is not None,
+        "model_loading": tts_model_loading,
+        "model_error": tss_model_error,
         "available_voices": list(VOICE_PRESETS.keys())
+    }
+
+
+@app.get("/v1/models")
+async def list_models():
+    """OpenAI-compatible models endpoint for client-side health checks."""
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "kokoro",
+                "object": "model",
+                "owned_by": "local",
+                "ready": tts_model is not None,
+                "loading": tts_model_loading,
+            }
+        ]
     }
 
 

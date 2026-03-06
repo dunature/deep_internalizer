@@ -136,6 +136,82 @@
     font-style: italic;
 }
 
+.preferenceSection {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.preferenceSection h2 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-5);
+}
+
+.preferenceRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.preferenceText h3 {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-1);
+}
+
+.preferenceText p {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+.switch {
+    position: relative;
+    display: inline-flex;
+    width: 52px;
+    height: 30px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    transition: all var(--transition-fast);
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    top: 3px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+    transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.switch input:checked+.slider {
+    background: color-mix(in srgb, var(--color-accent-primary) 35%, transparent);
+    border-color: var(--color-accent-primary);
+}
+
+.switch input:checked+.slider::before {
+    transform: translateX(22px);
+    background: var(--color-accent-primary);
+}
+
 /* Data Management Section */
 .dataSection {
     background: var(--color-bg-secondary);

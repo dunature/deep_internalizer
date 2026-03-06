@@ -15,7 +15,7 @@ const router = Router();
 const MAX_CONTENT_LENGTH = 50_000;
 
 router.post('/analyze', requireAuth, asyncHandler(async (req, res) => {
-    const { content, title, cacheOnly = false, source = 'unknown' } = req.body;
+    const { content, title, cacheOnly = false, source = 'unknown', llm = null } = req.body;
 
     if (!content || typeof content !== 'string') {
         return res.status(400).json({ error: 'content is required and must be a string' });
@@ -46,7 +46,7 @@ router.post('/analyze', requireAuth, asyncHandler(async (req, res) => {
     console.log(`[Content] Task ${taskId} queued for ${contentHash.substring(0, 12)}... (${content.length} chars)`);
 
     // Process asynchronously (fire-and-forget)
-    processTask(taskId, contentHash, content, title).catch(err => {
+    processTask(taskId, contentHash, content, title, llm).catch(err => {
         console.error(`[Content:TaskError] Task ${taskId} failed unconditionally:`, err.stack || err.message);
     });
 
@@ -58,11 +58,11 @@ router.post('/analyze', requireAuth, asyncHandler(async (req, res) => {
     });
 }));
 
-async function processTask(taskId, hash, content, title) {
+async function processTask(taskId, hash, content, title, llm) {
     queue.setProcessing(taskId);
 
     try {
-        const result = await analyzeContent(content);
+        const result = await analyzeContent(content, { ...(llm || {}), taskId });
 
         // Attach title
         result.title = title || inferTitle(content);
