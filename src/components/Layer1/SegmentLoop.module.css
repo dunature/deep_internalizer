@@ -69,29 +69,45 @@
 }
 
 .headerStep2 {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 0;
+    padding: 16px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
 }
 
 .headerStep2 .chunkTitle {
+    justify-self: center;
     text-align: center;
-    color: #0f172a;
+    color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-sans);
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 600;
+    line-height: 1;
+    transform: translateY(-1px);
+    /* Tweak vertical visual center of gravity */
 }
 
 .headerStep2 .backBtn {
-    color: #2563eb;
+    justify-self: start;
+    color: #60a5fa;
     font-weight: 600;
+    padding-left: 0;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
 }
 
 .headerStep2 .bilingualBtn {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    color: #0f172a;
+    justify-self: end;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
 }
 
 .headerStep2 .bilingualBtn.active {
@@ -292,7 +308,8 @@
 .step2Content {
     width: 100%;
     margin: 0 auto;
-    padding: 40px 24px;
+    padding: 0px 24px 140px 24px;
+    /* More bottom padding shifts visual center upwards */
 }
 
 .step2Header {
@@ -371,8 +388,8 @@
 /* Step 2 — Dark Mode */
 @media (prefers-color-scheme: dark) {
     .headerStep2 {
-        background: #0f172a;
-        border-color: #1e293b;
+        background: transparent;
+        border-bottom-color: #334155;
     }
 
     .headerStep2 .chunkTitle {
