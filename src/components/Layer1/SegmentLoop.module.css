@@ -144,11 +144,13 @@
 }
 
 .contentStep2 {
-    max-width: 860px;
-    padding: 18px 24px 28px;
+    max-width: 100%;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
 }
 
 /* Loading Spinner */
@@ -288,8 +290,9 @@
 }
 
 .step2Content {
-    width: min(800px, 100%);
-    gap: 18px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px 24px;
 }
 
 .step2Header {
@@ -323,10 +326,10 @@
 
 .step2Content .stepProgress {
     text-align: center;
-    color: #64748b;
-    font-size: var(--text-base, 1rem);
-    margin-top: 16px;
-    font-weight: 500;
+    color: #94a3b8;
+    font-size: 13px;
+    margin-top: 24px;
+    font-weight: 400;
 }
 
 .step2Content .wordActions :global(.btn) {

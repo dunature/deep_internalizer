@@ -27,7 +27,7 @@
     margin: 0;
     color: #0f172a;
     font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: clamp(2.5rem, 6vw, 3rem);
+    font-size: clamp(3.5rem, 8vw, 4.5rem);
     font-weight: 700;
     line-height: 1.1;
     text-align: center;
@@ -147,7 +147,7 @@
     padding: 0 var(--space-8, 32px) var(--space-8, 32px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
 }
 
 .lemmaRow {
