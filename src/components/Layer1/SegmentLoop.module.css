@@ -1,7 +1,11 @@
 .container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    /* Lock viewport */
+    background: #f8fafc;
+    /* Base color to blend everything */
 }
 
 .empty {
@@ -66,12 +70,17 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    /* faint separation instead of dark shadow */
+    color: #475569;
+    /* Dark text for the light background */
 }
 
 .headerStep2 {
-    background: transparent;
+    background: #f8fafc;
     border: none;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+    border-bottom: 1px dashed #cbd5e1;
     border-radius: 0;
     padding: 16px 32px;
     display: grid;
@@ -83,18 +92,17 @@
 .headerStep2 .chunkTitle {
     justify-self: center;
     text-align: center;
-    color: rgba(255, 255, 255, 0.95);
+    color: #475569;
     font-family: var(--font-sans);
-    font-size: 1.125rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 500;
     line-height: 1;
     transform: translateY(-1px);
-    /* Tweak vertical visual center of gravity */
 }
 
 .headerStep2 .backBtn {
     justify-self: start;
-    color: #60a5fa;
+    color: #2563eb;
     font-weight: 600;
     padding-left: 0;
     background: transparent;
@@ -105,9 +113,9 @@
 
 .headerStep2 .bilingualBtn {
     justify-self: end;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
 }
 
 .headerStep2 .bilingualBtn.active {
@@ -167,6 +175,7 @@
     flex-direction: column;
     justify-content: center;
     background: #f8fafc;
+    overflow: hidden;
 }
 
 /* Loading Spinner */
@@ -308,8 +317,11 @@
 .step2Content {
     width: 100%;
     margin: 0 auto;
-    padding: 0px 24px 140px 24px;
-    /* More bottom padding shifts visual center upwards */
+    padding: 16px 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .step2Header {
@@ -339,14 +351,16 @@
     width: min(700px, 100%);
     margin: 0 auto;
     gap: 16px;
+    margin-top: auto;
 }
 
 .step2Content .stepProgress {
     text-align: center;
     color: #94a3b8;
     font-size: 13px;
-    margin-top: 24px;
     font-weight: 400;
+    margin-top: 16px;
+    padding-bottom: 8px;
 }
 
 .step2Content .wordActions :global(.btn) {
