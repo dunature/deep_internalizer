@@ -423,13 +423,6 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     return (
         <div className={`${styles.stepContent} ${styles.step2Content}`}>
-            <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                <span className={styles.stepLabel}>Step 2</span>
-                <h3>Vocabulary Build</h3>
-                <p className={styles.stepDesc}>
-                    Word {currentWordIndex + 1} of {words.length}
-                </p>
-            </div>
 
             {/* Interactive Word Card Component */}
             <VocabularyCard
@@ -449,6 +442,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                     {alreadyAdded ? (isLastWord ? 'Finish →' : 'Next word →') : 'I know this'}
                 </button>
                 <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} />
+            </div>
+
+            <div className={styles.stepProgress}>
+                Word {currentWordIndex + 1} of {words.length}
             </div>
         </div>
     );

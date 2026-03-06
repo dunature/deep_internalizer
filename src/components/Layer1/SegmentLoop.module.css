@@ -321,6 +321,14 @@
     gap: 16px;
 }
 
+.step2Content .stepProgress {
+    text-align: center;
+    color: #64748b;
+    font-size: var(--text-base, 1rem);
+    margin-top: 16px;
+    font-weight: 500;
+}
+
 .step2Content .wordActions :global(.btn) {
     flex: 1;
     min-height: 44px;

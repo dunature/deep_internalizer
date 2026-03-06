@@ -150,11 +150,53 @@
     gap: 16px;
 }
 
-.cardMetaRow {
+.lemmaRow {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    min-height: 20px;
+    justify-content: space-between;
+    min-height: 28px;
+    margin-top: 16px;
+}
+
+.lemmaLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.lemmaText {
+    color: #0f172a;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+}
+
+.lemmaAudioBtn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.lemmaAudioBtn:hover {
+    transform: scale(1.1);
+}
+
+.lemmaAudioBtn:active {
+    transform: scale(0.95);
+}
+
+.lemmaAudioBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .posTag {
@@ -291,6 +333,15 @@
 
     .posTag {
         color: #d5dde8;
+    }
+
+    .lemmaText {
+        color: #e2e8f0;
+    }
+
+    .lemmaAudioBtn {
+        background: #4f7dba;
+        color: #0f172a;
     }
 
     .divider {
