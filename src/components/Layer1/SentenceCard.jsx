@@ -68,17 +68,9 @@ export default function SentenceCard({ sentence, translation, speak, isBilingual
     }, [isBilingual]);
 
     return (
-        <div className={`${styles.sentenceCard} animate-in fade-in slide-in-from-top-4`}>
-            {/* Scissors (Split) Button */}
-            <button
-                className={`${styles.scissorBtn} ${isSplit ? styles.active : ''}`}
-                onClick={handleToggleSplit}
-                disabled={isLoading}
-                title={isSplit ? "Show full sentence" : "Decompose into Thought Groups"}
-            >
-                {isLoading ? '⏳' : '✂️'}
-            </button>
-
+        <div className={styles.sentenceCard}>
+            <div className={styles.cardLabel}>SENTENCE</div>
+            
             <div className={styles.contentArea}>
                 {isSplit && thoughtGroups.length > 0 ? (
                     <div className={styles.thoughtGroupsGrid}>
@@ -100,29 +92,33 @@ export default function SentenceCard({ sentence, translation, speak, isBilingual
                     </div>
                 )}
 
-                {/* Translation Section (Conditional) */}
-                <div className={styles.zhContainer}>
-                    {isZhVisible ? (
-                        <p className={styles.translationZh}>{translation || "Translation not available (demo)"}</p>
-                    ) : (
-                        <button
-                            className={styles.revealBtn}
-                            onClick={() => setIsZhVisible(true)}
-                            title="Show translation"
-                        >
-                            中
-                        </button>
-                    )}
-                </div>
+                {/* Translation Display (when toggled or bilingual) */}
+                {isZhVisible && (
+                    <div className={styles.translationRow}>
+                        <p className={styles.translationZh}>{translation}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* 1:1 Card Tools (lj44Y / 5xRg5) */}
+            <div className={styles.cardTools}>
+                <button
+                    className={`${styles.toolBtn} ${styles.splitBtn} ${isSplit ? styles.active : ''}`}
+                    onClick={handleToggleSplit}
+                    disabled={isLoading}
+                >
+                    {isLoading ? 'Wait...' : '✂ Toggle Split'}
+                </button>
+                
+                <button
+                    className={`${styles.toolBtn} ${styles.transBtn} ${isZhVisible ? styles.active : ''}`}
+                    onClick={() => setIsZhVisible(!isZhVisible)}
+                >
+                    中 Translation
+                </button>
             </div>
 
             {error && <p className={styles.errorMsg}>{error}</p>}
-
-            <div className={styles.instructions}>
-                {isSplit ?
-                    "Tap a group to practice phrasing. Focus on the pause between blocks." :
-                    "Click the scissors to see 'Thought Groups'."}
-            </div>
         </div>
     );
 }

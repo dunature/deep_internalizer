@@ -174,7 +174,7 @@ export default function SegmentLoop({
     };
 
     return (
-        <div className={`${styles.container} ${currentStep === 1 ? styles.containerStep1 : ''} ${theme === 'dark' ? styles.darkTheme : ''}`}>
+        <div className={`${styles.container} ${currentStep === 1 ? styles.containerStep1 : ''} ${theme === 'dark' ? `${styles.darkTheme} darkTheme` : ''}`}>
             {/* Header (Nav) */}
             <header className={`${styles.header} ${currentStep === 1 ? styles.headerStep1 : (currentStep === 2 ? styles.headerStep2 : '')}`}>
                 <div className={styles.headerInner}>
@@ -190,7 +190,7 @@ export default function SegmentLoop({
                     </h2>
 
                     <div className={styles.topRight}>
-                        <button 
+                        <button
                             className={`${styles.themeToggle} ${theme === 'dark' ? styles.active : ''}`}
                             onClick={toggleTheme}
                         >
@@ -210,13 +210,13 @@ export default function SegmentLoop({
             {currentStep <= 2 && (
                 <div className={styles.stepTabsWrapper}>
                     <div className={styles.stepTabs}>
-                        <button
+                        <button 
                             className={`${styles.stepTab} ${currentStep === 1 ? styles.activeTab : ''}`}
                             onClick={() => onStepSet?.(1)}
                         >
                             Step 1 · Macro Context
                         </button>
-                        <button
+                        <button 
                             className={`${styles.stepTab} ${currentStep === 2 ? styles.activeTab : ''}`}
                             onClick={() => onStepSet?.(2)}
                         >
@@ -226,26 +226,10 @@ export default function SegmentLoop({
                 </div>
             )}
 
-            {/* Step indicator (Original, keeping for Step 3/4) */}
-            {currentStep > 2 && (
-                <div className={styles.stepIndicator}>
-                    {STEPS.map((step) => (
-                        <div
-                            key={step.id}
-                            className={`${styles.step} ${currentStep === step.id ? styles.active : ''} ${currentStep > step.id ? styles.completed : ''}`}
-                        >
-                            <span className={styles.stepIcon}>{step.icon}</span>
-                            <span className={styles.stepName}>{step.name}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-
             {/* Step content */}
             <main className={`${styles.content} ${currentStep === 2 ? styles.contentStep2 : ''}`}>
                 {renderStepContent()}
-            </main>
-        </div>
+            </main>        </div>
     );
 }
 
@@ -520,7 +504,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     const originalText = chunk?.originalText;
     const chunkId = chunk?.id;
 
-    // Reset state when chunk changes (during render, not in effect)
+    // Reset state when chunk changes
     if (chunkId !== lastChunkIdRef.current) {
         lastChunkIdRef.current = chunkId;
         if (translations !== null) {
@@ -531,7 +515,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
         }
     }
 
-    // Split chunk text into sentences - memoize to stabilize reference
+    // Split chunk text into sentences
     const sentences = useMemo(() => {
         if (!originalText) return [];
         return originalText
@@ -540,10 +524,10 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
             .slice(0, 5); // Limit to 5 sentences
     }, [originalText]);
 
-    // Derive loading state from data presence
+    // Derive loading state
     const isLoadingTranslations = translations === null && sentences.length > 0 && chunkId;
 
-    // Fetch translations on mount
+    // Fetch translations
     useEffect(() => {
         if (!chunkId || sentences.length === 0) {
             return;
@@ -551,7 +535,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
 
         prefetchService.prefetchTranslations(chunkId, sentences)
             .then(result => setTranslations(result || []))
-            .catch(() => setTranslations([])); // On error, set empty array
+            .catch(() => setTranslations([]));
     }, [chunkId, sentences]);
 
     const currentSentence = sentences[currentSentenceIndex];
@@ -559,7 +543,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     const isLast = currentSentenceIndex >= sentences.length - 1;
 
     const handleNext = () => {
-        stop(); // Stop audio if playing
+        stop();
         if (isLast) {
             onComplete();
         } else {
@@ -577,12 +561,8 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
 
     if (sentences.length === 0) {
         return (
-            <div className={styles.stepContent}>
-                <div className={styles.stepHeader}>
-                    <span className={styles.stepLabel}>Step 3</span>
-                    <h3>Articulation</h3>
-                    <p className={styles.stepDesc}>No sentences to practice</p>
-                </div>
+            <div className={styles.empty}>
+                <p>No sentences to practice</p>
                 <button className="btn btn-primary" onClick={onComplete}>
                     Continue →
                 </button>
@@ -591,16 +571,12 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     }
 
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 3</span>
-                <h3>Articulation</h3>
-                <p className={styles.stepDesc}>
-                    Sentence {currentSentenceIndex + 1} of {sentences.length}
-                </p>
+        <div className={styles.articulationBody}>
+            <div className={styles.stepInfo}>
+                Sentence {currentSentenceIndex + 1} of {sentences.length}
             </div>
 
-            {/* Thought Group Interactive Card */}
+            {/* 1:1 Sentence Card (KUXuU / hcMLo) */}
             <SentenceCard
                 sentence={currentSentence}
                 translation={currentTranslation || (isLoadingTranslations ? "Translating..." : "")}
@@ -608,22 +584,24 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
                 isBilingual={isBilingual}
             />
 
-            <div className={styles.audioControls}>
+            {/* 1:1 Action Rows (nHjs1 / wrgBa) */}
+            <div className={styles.actionRowPrimary}>
                 <button
-                    className={`btn ${isPlaying ? 'btn-secondary' : 'btn-ghost'} ${styles.audioBtn}`}
+                    className={`${styles.playCta} ${isPlaying ? styles.isPlaying : ''}`}
                     onClick={handlePlay}
                     disabled={isLoading}
-                    title={error ? `Error: ${error}` : "Listen to full sentence"}
-                    style={{ opacity: 1, cursor: 'pointer' }}
                 >
-                    {isLoading ? '⏳' : isPlaying ? '⏹️ Stop Full' : '🔊 Full Sentence'}
+                    {isLoading ? 'Loading...' : (isPlaying ? 'Stop Audio' : 'Play Audio')}
                 </button>
-                {error && <span className={styles.errorText} style={{ color: 'red', fontSize: '12px', marginLeft: '10px' }}>⚠️ TTS Error</span>}
             </div>
 
-            <button className="btn btn-primary btn-large" onClick={handleNext}>
-                {isLast ? 'Continue to Flow Practice →' : 'Next Sentence →'}
-            </button>
+            <div className={styles.actionRowSecondary}>
+                <button className={styles.nextCta} onClick={handleNext}>
+                    {isLast ? 'Complete Articulation ✓' : 'Next Sentence →'}
+                </button>
+            </div>
+
+            {error && <div className={styles.errorBanner}>⚠️ {error}</div>}
         </div>
     );
 }

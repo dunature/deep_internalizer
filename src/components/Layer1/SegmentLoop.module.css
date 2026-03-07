@@ -6,58 +6,53 @@
     background: #f8fafc;
 }
 
-.active {
-    background: #2563EB !important;
-    border-color: #2563EB !important;
-    color: #FFFFFF !important;
+.containerStep1 {
+    background: #f8fafc;
+    overflow-y: auto;
 }
 
-.themeToggle.active,
-.bilingualBtn.active {
-    background: #2563EB !important;
-    border-color: #2563EB !important;
-    color: #FFFFFF !important;
-}
-
+.darkTheme.container,
 .darkTheme.containerStep1 {
     background: #0B1220 !important;
 }
 
 @media (prefers-color-scheme: dark) {
+
+    .container,
     .containerStep1 {
         background: #0B1220 !important;
     }
 }
 
-/* 1:1 Nav Refactor (Bxj1E / kgtVp) */
-.headerStep1 {
-    height: 64px;
+/* Common Header Styles (Standard Grid Header) */
+.headerInner {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    align-items: center;
+    max-width: 1224px;
+    margin: 0 auto;
+}
+
+.header {
+    height: 68px;
     background: #FFFFFF;
     border-bottom: 1px solid #E2E8F0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    padding: 0 32px;
 }
 
-.darkTheme .headerStep1 {
+.darkTheme .header {
     background: #0B1220 !important;
     border-bottom-color: #1F2937 !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    .headerStep1 {
+    .header {
         background: #0B1220 !important;
         border-bottom-color: #1F2937 !important;
     }
-}
-
-.headerInner {
-    width: 100%;
-    max-width: 1224px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 260px 1fr 260px;
-    align-items: center;
 }
 
 .navLeft {
@@ -84,7 +79,8 @@
     }
 }
 
-.backLink {
+.backLink,
+.back {
     background: transparent;
     border: none;
     color: #2563EB;
@@ -95,36 +91,44 @@
     text-align: left;
 }
 
-.darkTheme .backLink {
+.darkTheme .backLink,
+.darkTheme .back {
     color: #60A5FA !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    .backLink {
+
+    .backLink,
+    .back {
         color: #60A5FA !important;
     }
 }
 
-.chunkTitle {
+.chunkTitle,
+.navTitle {
     font-size: 16px;
     font-weight: 600;
     color: #0F172A;
     text-align: center;
 }
 
-.darkTheme .chunkTitle {
+.darkTheme .chunkTitle,
+.darkTheme .navTitle {
     color: #E2E8F0 !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    .chunkTitle {
+
+    .chunkTitle,
+    .navTitle {
         color: #E2E8F0 !important;
     }
 }
 
-.topRight {
+.topRight,
+.navRight {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-self: end;
 }
 
@@ -159,21 +163,24 @@
     }
 }
 
-/* 1:1 Step Tabs (lZEqj / uIzUh) */
-.stepTabsWrapper {
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.bilingualBtn.active,
+.themeToggle.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
 }
 
-.stepTabs {
+/* Step Tabs */
+.stepTabsWrapper {
     width: 100%;
     max-width: 1224px;
     margin: 0 auto;
+    padding: 12px 0;
+}
+
+.stepTabs {
     display: flex;
     gap: 10px;
-    height: 40px;
 }
 
 .stepTab {
@@ -202,13 +209,6 @@
     color: #B8C5D6 !important;
 }
 
-@media (prefers-color-scheme: dark) {
-    .stepTab {
-        background: #1E293B !important;
-        color: #B8C5D6 !important;
-    }
-}
-
 .darkTheme .stepTab.activeTab {
     background: #0F172A !important;
     color: #E2E8F0 !important;
@@ -216,6 +216,11 @@
 }
 
 @media (prefers-color-scheme: dark) {
+    .stepTab {
+        background: #1E293B !important;
+        color: #B8C5D6 !important;
+    }
+
     .stepTab.activeTab {
         background: #0F172A !important;
         color: #E2E8F0 !important;
@@ -223,7 +228,112 @@
     }
 }
 
-/* 1:1 Macro Body Layout (jxs4D / ccyfg) */
+/* 1:1 Articulation Layout (bqXGz / BFhk7) */
+.articulationBody {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px 32px;
+    overflow-y: auto;
+}
+
+.stepInfo {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748B;
+    margin-bottom: 4px;
+}
+
+.darkTheme .stepInfo {
+    color: #94A3B8 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stepInfo {
+        color: #94A3B8 !important;
+    }
+}
+
+.actionRowPrimary {
+    width: 980px;
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.playCta {
+    height: 48px;
+    padding: 0 28px;
+    border-radius: 12px;
+    background: #2563EB;
+    border: 1px solid #0F172A;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.playCta:active {
+    transform: scale(0.98);
+}
+
+.darkTheme .playCta {
+    background: #60A5FA !important;
+    color: #0B1220 !important;
+    border-color: #60A5FA !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .playCta {
+        background: #60A5FA !important;
+        color: #0B1220 !important;
+        border-color: #60A5FA !important;
+    }
+}
+
+.actionRowSecondary {
+    width: 980px;
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.nextCta {
+    width: 420px;
+    height: 48px;
+    border-radius: 12px;
+    background: #0F172A;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+
+.darkTheme .nextCta {
+    background: #60A5FA !important;
+    color: #0B1220 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .nextCta {
+        background: #60A5FA !important;
+        color: #0B1220 !important;
+    }
+}
+
+.errorBanner {
+    color: #EF4444;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 12px;
+}
+
+/* Step 1 Specific overrides */
 .macroBody {
     display: flex;
     gap: 28px;
@@ -232,7 +342,6 @@
     padding: 28px 0;
 }
 
-/* Primary Summary (Jz0NW / 1yAM5) */
 .primarySummary {
     width: 896px;
     height: 516px;
@@ -259,6 +368,9 @@
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
     }
 }
+
+/* ... rest of existing Step 1 styles from SegmentLoop.module.css ... */
+/* NOTE: I am overwriting the file so I must include all relevant styles */
 
 .macroKicker {
     color: #2563EB;
@@ -325,10 +437,8 @@
     font-weight: 600;
 }
 
-/* Secondary & Tertiary Sidebar (O70AO / LRxm3) */
 .secondaryTertiary {
     width: 300px;
-    height: 476px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -346,7 +456,11 @@
 }
 
 .darkTheme .cnSummary,
-.darkTheme .originalPreviewCard,
+.darkTheme .originalPreviewCard {
+    background: #121B2B !important;
+    border-color: #1F2937 !important;
+}
+
 @media (prefers-color-scheme: dark) {
 
     .cnSummary,
@@ -427,8 +541,10 @@
     }
 }
 
-/* Fix generic Step 2 content consistency */
-.contentStep2 {
-    max-width: 1400px;
-    margin: 0 auto;
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: var(--color-text-muted);
 }
