@@ -808,48 +808,27 @@ function App() {
     case VIEW.LAYER0:
     default:
       return (
-        <div className="app">
-          <nav className="top-nav">
-            <div className="breadcrumb">
-              <span className="breadcrumb-item active">Global Map</span>
-            </div>
-
-            <div className="nav-actions">
-              <ThemeToggle />
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  cancelPendingOperations();
-                  setCurrentView(VIEW.PROFILE);
-                }}
-                title="User Profile"
-              >
-                👤
-              </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowImport(true)}
-              >
-                + New
-              </button>
-            </div>
-          </nav>
-
-          <main className="main-content">
-            {isLoading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Loading...</p>
-              </div>
-            ) : (
-              <GlobalBlueprint
-                document={document}
-                chunks={chunks}
-                currentChunkIndex={currentChunkIndex}
-                onChunkSelect={handleChunkSelect}
-              />
-            )}
-          </main>
+        <>
+          <div className="app">
+            {/* Header is now handled inside GlobalBlueprint to align with Pencil design */}
+            <main className="main-content">
+              {isLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading...</p>
+                </div>
+              ) : (
+                <GlobalBlueprint
+                  document={document}
+                  chunks={chunks}
+                  currentChunkIndex={currentChunkIndex}
+                  onChunkSelect={handleChunkSelect}
+                  onShowImport={() => setShowImport(true)}
+                  onShowProfile={() => setCurrentView(VIEW.PROFILE)}
+                />
+              )}
+            </main>
+          </div>
 
           <ImportModal
             isOpen={showImport}
@@ -860,11 +839,10 @@ function App() {
             processingStep={processingStep}
             processingMeta={processingMeta}
             processingSteps={IMPORT_STEPS}
-
           />
           <PWAPrompt />
           <OfflineIndicator />
-        </div>
+        </>
       );
   }
 }
