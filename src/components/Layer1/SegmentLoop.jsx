@@ -654,26 +654,34 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
     };
 
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 4</span>
-                <h3>Flow Practice</h3>
-                <p className={styles.stepDesc}>
-                    Read the full passage — words you've learned are highlighted
-                </p>
-            </div>
+        <div className={styles.flowBody}>
+            <div className={styles.flowContent}>
+                {/* 1:1 Flow Card (k3TwR / aIBQS) */}
+                <div className={styles.flowCard}>
+                    <div className={styles.titleBlock}>
+                        <div className={styles.stepKicker}>Step 4</div>
+                        <h2 className={styles.flowTitle}>Flow Practice</h2>
+                        <p className={styles.flowDesc}>
+                            Read the full passage — words you've learned are highlighted.
+                        </p>
+                    </div>
+                    
+                    <div className={styles.titleDivider}></div>
 
-            <div className={styles.flowPassage}>
-                {paragraphs.map((para, idx) => (
-                    <p key={idx} className={styles.flowParagraph}>
-                        {renderWithHighlights(para)}
-                    </p>
-                ))}
-            </div>
+                    <div className={styles.passage}>
+                        {paragraphs.map((para, idx) => (
+                            <p key={idx} className={styles.flowParagraph}>
+                                {renderWithHighlights(para)}
+                            </p>
+                        ))}
+                    </div>
+                </div>
 
-            <button className="btn btn-primary btn-large" onClick={onComplete}>
-                Complete Chunk ✓
-            </button>
+                {/* 1:1 Complete CTA (oPlal / 95vgd) */}
+                <button className={styles.completeCta} onClick={onComplete}>
+                    Complete Chunk ✓
+                </button>
+            </div>
         </div>
     );
 }
