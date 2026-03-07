@@ -1,7 +1,11 @@
 .container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    /* Lock viewport */
+    background: #f8fafc;
+    /* Base color to blend everything */
 }
 
 .empty {
@@ -66,31 +70,51 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    /* faint separation instead of dark shadow */
+    color: #475569;
+    /* Dark text for the light background */
 }
 
 .headerStep2 {
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 14px 20px;
+    border: none;
+    border-bottom: 1px dashed #cbd5e1;
+    border-radius: 0;
+    padding: 16px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
 }
 
 .headerStep2 .chunkTitle {
+    justify-self: center;
     text-align: center;
-    color: #0f172a;
+    color: #475569;
     font-family: var(--font-sans);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 500;
+    line-height: 1;
+    transform: translateY(-1px);
 }
 
 .headerStep2 .backBtn {
+    justify-self: start;
     color: #2563eb;
     font-weight: 600;
+    padding-left: 0;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
 }
 
 .headerStep2 .bilingualBtn {
+    justify-self: end;
     background: #ffffff;
-    border-color: #e2e8f0;
+    border: 1px solid #e2e8f0;
     color: #0f172a;
 }
 
@@ -144,11 +168,14 @@
 }
 
 .contentStep2 {
-    max-width: 860px;
-    padding: 18px 24px 28px;
+    max-width: 100%;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
+    overflow: hidden;
 }
 
 /* Loading Spinner */
@@ -288,8 +315,13 @@
 }
 
 .step2Content {
-    width: min(800px, 100%);
-    gap: 18px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .step2Header {
@@ -299,26 +331,36 @@
 .step2Content .stepLabel {
     color: #2563eb;
     background: #dbeafe;
-    font-size: 0.875rem;
-    padding: 4px 12px;
+    font-size: var(--text-base, 1rem);
+    padding: 6px 16px;
 }
 
 .step2Content .stepHeader h3 {
     color: #0f172a;
     font-family: var(--font-sans);
-    font-size: 2rem;
+    font-size: var(--text-3xl, 1.875rem);
     margin-bottom: 2px;
 }
 
 .step2Content .stepDesc {
     color: #64748b;
-    font-size: 0.875rem;
+    font-size: var(--text-xl, 1.25rem);
 }
 
 .step2Content .wordActions {
-    width: min(520px, 100%);
+    width: min(700px, 100%);
     margin: 0 auto;
     gap: 16px;
+    margin-top: auto;
+}
+
+.step2Content .stepProgress {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 400;
+    margin-top: 16px;
+    padding-bottom: 8px;
 }
 
 .step2Content .wordActions :global(.btn) {
@@ -360,8 +402,8 @@
 /* Step 2 — Dark Mode */
 @media (prefers-color-scheme: dark) {
     .headerStep2 {
-        background: #0f172a;
-        border-color: #1e293b;
+        background: transparent;
+        border-bottom-color: #334155;
     }
 
     .headerStep2 .chunkTitle {

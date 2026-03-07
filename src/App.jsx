@@ -780,7 +780,7 @@ function App() {
     case VIEW.LAYER1:
       return (
         <div className="app">
-          <nav className="top-nav">
+          <nav className={`top-nav ${currentStep === 2 ? 'nav-step2' : ''}`}>
             <div className="breadcrumb">
               <span
                 className="breadcrumb-item clickable"
