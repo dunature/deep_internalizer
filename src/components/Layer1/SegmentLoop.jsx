@@ -23,9 +23,12 @@ export default function SegmentLoop({
     words: externalWords = [],
     currentStep,
     onStepComplete,
+    onStepSet,
     onWordAction,
     onBack
 }) {
+    const toggleTheme = useAppStore(state => state.toggleTheme);
+    const theme = useAppStore(state => state.theme);
     const [isBilingual, setIsBilingual] = useState(false);
     const [prefetchedWords, setPrefetchedWords] = useState(null); // null = loading, [] = loaded empty
     const [prefetchError, setPrefetchError] = useState(false);
@@ -171,9 +174,60 @@ export default function SegmentLoop({
     };
 
     return (
-        <div className={styles.container}>
-            {/* Step indicator */}
-            {currentStep !== 2 && (
+        <div className={`${styles.container} ${currentStep === 1 ? styles.containerStep1 : ''} ${theme === 'dark' ? styles.darkTheme : ''}`}>
+            {/* Header (Nav) */}
+            <header className={`${styles.header} ${currentStep === 1 ? styles.headerStep1 : (currentStep === 2 ? styles.headerStep2 : '')}`}>
+                <div className={styles.headerInner}>
+                    <div className={styles.navLeft}>
+                        <div className={styles.breadcrumb}>Global Map &gt; Chunk #1 &gt; Step {currentStep}</div>
+                        <button className={styles.backLink} onClick={onBack}>
+                            ← Back to Map
+                        </button>
+                    </div>
+
+                    <h2 className={styles.chunkTitle}>
+                        {currentStep === 1 ? "Macro Context Summary" : chunk.title}
+                    </h2>
+
+                    <div className={styles.topRight}>
+                        <button 
+                            className={`${styles.themeToggle} ${theme === 'dark' ? styles.active : ''}`}
+                            onClick={toggleTheme}
+                        >
+                            Theme
+                        </button>
+                        <button
+                            className={`${styles.bilingualBtn} ${isBilingual ? styles.active : ''}`}
+                            onClick={() => setIsBilingual(!isBilingual)}
+                        >
+                            中/EN
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Step Tabs (Macro/Language) */}
+            {currentStep <= 2 && (
+                <div className={styles.stepTabsWrapper}>
+                    <div className={styles.stepTabs}>
+                        <button
+                            className={`${styles.stepTab} ${currentStep === 1 ? styles.activeTab : ''}`}
+                            onClick={() => onStepSet?.(1)}
+                        >
+                            Step 1 · Macro Context
+                        </button>
+                        <button
+                            className={`${styles.stepTab} ${currentStep === 2 ? styles.activeTab : ''}`}
+                            onClick={() => onStepSet?.(2)}
+                        >
+                            Step 2 · Baseline Language
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Step indicator (Original, keeping for Step 3/4) */}
+            {currentStep > 2 && (
                 <div className={styles.stepIndicator}>
                     {STEPS.map((step) => (
                         <div
@@ -186,21 +240,6 @@ export default function SegmentLoop({
                     ))}
                 </div>
             )}
-
-            {/* Chunk header */}
-            <header className={`${styles.header} ${currentStep === 2 ? styles.headerStep2 : ''}`}>
-                <button className={`btn btn-ghost ${styles.backBtn}`} onClick={onBack}>
-                    ← Back to Map
-                </button>
-                <h2 className={styles.chunkTitle}>{chunk.title}</h2>
-                <button
-                    className={`${styles.bilingualBtn} ${isBilingual ? styles.active : ''}`}
-                    onClick={() => setIsBilingual(!isBilingual)}
-                    title={isBilingual ? "Hide Chinese" : "Show Chinese"}
-                >
-                    中/EN
-                </button>
-            </header>
 
             {/* Step content */}
             <main className={`${styles.content} ${currentStep === 2 ? styles.contentStep2 : ''}`}>
@@ -215,31 +254,48 @@ export default function SegmentLoop({
  */
 function Step1MacroContext({ chunk, isBilingual, onComplete }) {
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 1</span>
-                <h3>Macro Context</h3>
-                <p className={styles.stepDesc}>Read the summary to understand the big picture</p>
+        <div className={styles.macroBody}>
+            {/* Left Column: Primary Summary */}
+            <div className={styles.primarySummary}>
+                <div className={styles.macroKicker}>Macro Context</div>
+                <h2 className={styles.macroMainTitle}>{chunk.title || "Macro Summary"}</h2>
+                <div className={styles.macroMainBody}>
+                    <p>{chunk.summary}</p>
+                </div>
+
+                <div className={styles.macroSpacer} />
+
+                <div className={styles.macroCtaRow}>
+                    <button className={`btn btn-secondary btn-large ${styles.actionBtn}`} onClick={() => window.history.back()}>
+                        Explore Map
+                    </button>
+                    <button className={`btn btn-primary btn-large ${styles.actionBtn}`} onClick={onComplete}>
+                        Build Vocabulary →
+                    </button>
+                </div>
             </div>
 
-            <div className={styles.summaryCard}>
-                <p className={styles.summary}>{chunk.summary}</p>
+            {/* Right Column: Secondary & Tertiary Info */}
+            <div className={styles.secondaryTertiary}>
                 {isBilingual && chunk.summary_zh && (
-                    <p className={styles.summaryZh}>{chunk.summary_zh}</p>
+                    <div className={styles.cnSummary}>
+                        <div className={styles.columnLabel}>CN SUMMARY</div>
+                        <p className={styles.cnText}>{chunk.summary_zh}</p>
+                    </div>
                 )}
-            </div>
 
-            <div className={styles.originalPreview}>
-                <h4>Original Text Preview</h4>
-                <p className={styles.originalText}>
-                    {chunk.originalText?.substring(0, 300)}
-                    {chunk.originalText?.length > 300 ? '...' : ''}
-                </p>
+                <div className={styles.originalPreviewCard}>
+                    <div className={styles.columnLabel}>ORIGINAL PREVIEW</div>
+                    <p className={styles.previewText}>
+                        {chunk.originalText?.substring(0, 240)}
+                        {chunk.originalText?.length > 240 ? '...' : ''}
+                    </p>
+                    <div className={styles.tertiaryStrip}>
+                        <span>{chunk.originalText?.length || 0} characters</span>
+                        <span>Full text below</span>
+                    </div>
+                </div>
             </div>
-
-            <button className="btn btn-primary btn-large" onClick={onComplete}>
-                I understand the context →
-            </button>
         </div>
     );
 }
@@ -435,13 +491,13 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
             {/* Action buttons */}
             <div className={styles.wordActions}>
                 <button
-                    className="btn btn-secondary"
+                    className={`btn btn-secondary ${styles.actionBtn}`}
                     onClick={handleSkipWord}
                     disabled={isAdding}
                 >
                     {alreadyAdded ? (isLastWord ? 'Finish →' : 'Next word →') : 'I know this'}
                 </button>
-                <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} />
+                <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} className={styles.actionBtn} />
             </div>
 
             <div className={styles.stepProgress}>
@@ -584,7 +640,7 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
             .split(/\n\s*\n/)
             .map(p => p.trim())
             .filter(p => p.length > 0);
-    }, [chunk?.originalText]);
+    }, [chunk.originalText]);
 
     // Build a set of learned word texts for highlighting
     const learnedWords = useMemo(() => {
@@ -642,7 +698,7 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
 /**
  * Helper: Add Button with Feedback
  */
-function AddButton({ onClick, isBusy = false, isAdded = false }) {
+function AddButton({ onClick, isBusy = false, isAdded = false, className = '' }) {
     const [justAdded, setJustAdded] = useState(false);
     const [isPressing, setIsPressing] = useState(false);
     const skipClickRef = useRef(false);
@@ -710,7 +766,7 @@ function AddButton({ onClick, isBusy = false, isAdded = false }) {
 
     return (
         <button
-            className={`btn ${showAdded ? 'btn-success' : 'btn-primary'}`}
+            className={`btn ${showAdded ? 'btn-success' : 'btn-primary'} ${className}`}
             onPointerDown={handlePointerDown}
             onClick={handleClick}
             disabled={disabled}

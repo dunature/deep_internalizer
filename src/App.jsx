@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { GlobalBlueprint } from './components/Layer0';
 import { SegmentLoop } from './components/Layer1';
 import { VocabularyReview } from './components/Vocabulary';
-import { LaunchInterception, ImportModal, UserProfile, PWAPrompt, OfflineIndicator } from './components/common';
+import { LaunchInterception, ImportModal, UserProfile, PWAPrompt, OfflineIndicator, ThemeToggle } from './components/common';
 import { useAppStore } from './stores/appStore';
 import {
   db,
@@ -780,31 +780,14 @@ function App() {
     case VIEW.LAYER1:
       return (
         <div className="app">
-          <nav className={`top-nav ${currentStep === 2 ? 'nav-step2' : ''}`}>
-            <div className="breadcrumb">
-              <span
-                className="breadcrumb-item clickable"
-                onClick={handleBackToMap}
-              >
-                Global Map
-              </span>
-              <span className="breadcrumb-sep">›</span>
-              <span className="breadcrumb-item">
-                Chunk #{currentChunkIndex + 1}
-              </span>
-              <span className="breadcrumb-sep">›</span>
-              <span className="breadcrumb-item active">
-                Step {currentStep}
-              </span>
-            </div>
-          </nav>
-
+          {/* Header is now handled inside SegmentLoop to align with Pencil design */}
           <main className="main-content">
             <SegmentLoop
               chunk={chunks[currentChunkIndex]}
               words={chunkWords}
               currentStep={currentStep}
               onStepComplete={handleStepComplete}
+              onStepSet={setCurrentStep}
               onWordAction={handleWordAction}
               onBack={handleBackToMap}
             />
@@ -832,6 +815,7 @@ function App() {
             </div>
 
             <div className="nav-actions">
+              <ThemeToggle />
               <button
                 className="btn btn-ghost"
                 onClick={() => {

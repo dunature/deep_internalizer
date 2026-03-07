@@ -10,6 +10,7 @@ import { hashText } from '../../utils/hash';
 import { checkBridgeCache, importFromBridge, isBridgeAvailable } from '../../services/cacheBridgeService';
 import { getAnalysisCache } from '../../db/schema';
 import ThinkingProcess from './ThinkingProcess';
+import ThemeToggle from './ThemeToggle';
 import styles from './ImportModal.module.css';
 
 const PROVIDER_DEFAULTS = {
@@ -350,12 +351,15 @@ export default function ImportModal({
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 <header className={styles.header}>
                     <h2>Import New Document</h2>
-                    <button
-                        className={`btn btn-ghost ${styles.closeBtn}`}
-                        onClick={handleClose}
-                    >
-                        ✕
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <ThemeToggle />
+                        <button
+                            className={`btn btn-ghost ${styles.closeBtn}`}
+                            onClick={handleClose}
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </header>
 
                 {isLoading ? (

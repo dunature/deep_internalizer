@@ -29,7 +29,7 @@
 ![Global Map](./screenshots/global_map_layer0_1772760141769.png)
 
 ### 界面视觉元素 (UI Elements)
-- **Top Navigation Bar (顶部导航栏)**: 包含左侧面包屑 (Breadcrumbs) `Global Map` 和右侧的全局操作图标 (如 User Profile, Import New `+` 按钮)。
+- **Top Navigation Bar (顶部导航栏)**: 包含左侧面包屑 (Breadcrumbs) `Global Map` 和右侧的全局操作图标 (如 Theme Toggle 昼夜切换, User Profile, Import New `+` 按钮)。
 - **Greeting / Stats Header (欢迎面板/数据概览)**: 问候语 (`Welcome back`)、进度条、Heatmap 占位区及统计数字。
 - **Document Card (文档承载卡片)**: 包含文档标题及进度提示。
 - **Chunk Path / Nodes (学习路径节点)**:
@@ -248,6 +248,17 @@ db.words.update(id, { status: 'archived' }) // Archive 操作
 addReviewRecord(wordId, action)            // 写入 reviewRecords
 incrementUserStats({ words: N })           // 更新每日统计
 ```
+
+---
+
+## 📌 预留：组件与路由注册位置 (Component & Routing Reservations)
+
+- **Theme Toggle (昼夜切换模型组件)**:
+  - **组件路径**: `src/components/common/ThemeToggle.jsx` (预留占位符)
+  - **挂载位置 (UI/视图)**:
+    - `Global Map (全局知识地图)` 的 Layer0 Top Navigation Bar 右侧。
+    - `Import Page` / `ImportModal` (导入模块) 的 `header` 右侧操作区。
+  - **功能要求**: 点击切换并持久化 Dark / Light Theme，待具体设计稿给出后完善 UI 与逻辑。
 
 ---
 

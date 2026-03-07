@@ -6,3 +6,4 @@ export { default as PWAPrompt } from './PWAPrompt';
 export { default as OfflineIndicator } from './OfflineIndicator';
 export { default as ThinkingProcess } from './ThinkingProcess';
 export { default as HighlightedText } from './HighlightedText';
+export { default as ThemeToggle } from './ThemeToggle';
