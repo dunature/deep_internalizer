@@ -1,21 +1,37 @@
-/* VocabularyCard — Refined per Variant 9 design spec */
-
-.cardShell {
-    width: min(700px, 100%);
-    min-height: 360px;
-    margin: 0 auto;
+.card {
+    width: 700px;
+    background: #FFFFFF;
     border-radius: 20px;
-    background: #ffffff;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+    padding: 28px 32px;
     display: flex;
     flex-direction: column;
-    transition: box-shadow 0.3s ease, background 0.3s ease;
+    gap: 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    transition: all 0.3s ease;
 }
 
-/* ─── Front: word + phonetic + audio ─── */
+:global(.darkTheme) .card {
+    width: 760px;
+    /* vK0th specific */
+    background: linear-gradient(180deg, #182338 0%, #121B2B 100%) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    padding: 24px;
+    gap: 16px;
+}
 
-.cardHeader {
-    padding: var(--space-8, 32px) var(--space-8, 32px) var(--space-6, 24px);
+@media (prefers-color-scheme: dark) {
+    .card {
+        width: 760px;
+        /* vK0th specific */
+        background: linear-gradient(180deg, #182338 0%, #121B2B 100%) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        padding: 24px;
+        gap: 16px;
+    }
+}
+
+/* Front Section */
+.front {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -23,94 +39,86 @@
 }
 
 .mainWord {
-    margin: 0;
-    color: #0f172a;
-    font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    font-size: 44px;
     font-weight: 700;
-    line-height: 1.1;
-    text-align: center;
-    cursor: pointer;
-    transition: color 0.2s ease;
-    word-break: break-word;
+    color: #0F172A;
+    margin: 0;
 }
 
-.mainWord:active {
-    color: #2563eb;
+:global(.darkTheme) .mainWord {
+    font-size: 34px;
+    color: #E2E8F0 !important;
 }
 
-.phoneticRow {
+@media (prefers-color-scheme: dark) {
+    .mainWord {
+        font-size: 34px;
+        color: #E2E8F0 !important;
+    }
+}
+
+.phonRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.phonText {
+    font-size: 16px;
+    color: #64748B;
+    font-family: var(--font-mono, monospace);
+}
+
+:global(.darkTheme) .phonText {
+    color: #94A3B8 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .phonText {
+        color: #94A3B8 !important;
+    }
+}
+
+.phonActions {
+    display: flex;
+    gap: 8px;
+}
+
+.audioIconBtn {
+    background: #2563EB;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.phoneticText {
-    color: #64748b;
-    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
-    font-size: var(--text-base, 1rem);
-    font-weight: 500;
-}
-
-.audioBtn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 50%;
-    background: #2563eb;
-    color: #ffffff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    color: #FFFFFF;
+    font-size: 10px;
     cursor: pointer;
-    font-size: 0.75rem;
-    transition: transform 0.15s ease, background 0.2s ease;
-}
-
-.audioBtn:hover {
-    transform: scale(1.1);
-}
-
-.audioBtn:active {
-    transform: scale(0.95);
-}
-
-.audioBtn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
 }
 
 .scissorBtn {
-    border: none;
     background: transparent;
-    color: #64748b;
-    font-size: 1rem;
+    border: none;
+    color: #64748B;
+    font-size: 14px;
     cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.15s ease, color 0.15s ease;
 }
 
-.scissorBtn.active,
-.scissorBtn:hover {
-    opacity: 1;
-    color: #2563eb;
+.scissorBtn.active {
+    color: #2563EB;
 }
 
-/* ─── Syllable split ─── */
-
-.syllableContainer {
-    width: 100%;
+/* Syllable Grid */
+.syllableGrid {
     display: flex;
     justify-content: center;
     gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 6px;
+    margin-top: 10px;
 }
 
-.syllableColumn {
+.syllableNode {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -118,259 +126,157 @@
     cursor: pointer;
 }
 
-.syllableChip {
+.syllableBox {
     padding: 6px 14px;
     border-radius: 999px;
-    border: 1px solid #bfdbfe;
-    background: #eff6ff;
-    color: #1e3a8a;
-    font-size: var(--text-sm, 0.875rem);
+    border: 1px solid #BFDBFE;
+    background: #EFF6FF;
+    color: #1E3A8A;
+    font-size: 14px;
     font-weight: 600;
-    transition: background 0.15s ease, color 0.15s ease;
 }
 
-.syllableChip.playing {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #ffffff;
+.syllableBox.playing {
+    background: #2563EB;
+    color: #FFFFFF;
 }
 
-.syllablePhonetic {
-    color: #64748b;
-    font-size: 0.75rem;
-    font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+.syllablePhon {
+    font-size: 11px;
+    color: #64748B;
 }
 
-/* ─── Back: pos + definition + example ─── */
-
-.cardBody {
-    padding: 0 var(--space-8, 32px) var(--space-6, 24px);
+/* BackHead Section */
+.backHead {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.lemmaRow {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     min-height: 28px;
-    margin-top: 16px;
 }
 
 .lemmaLeft {
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-.lemmaText {
-    color: #0f172a;
-    font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: var(--text-lg, 1.125rem);
-    font-weight: 700;
-}
-
-.lemmaAudioBtn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 50%;
-    background: #2563eb;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.15s ease, background 0.2s ease;
-}
-
-.lemmaAudioBtn:hover {
-    transform: scale(1.1);
-}
-
-.lemmaAudioBtn:active {
-    transform: scale(0.95);
-}
-
-.lemmaAudioBtn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.posTag {
-    color: #64748b;
-    font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: var(--text-sm, 0.875rem);
-    font-weight: 600;
-}
-
-.divider {
-    width: 100%;
-    height: 1px;
-    background: #e2e8f0;
-}
-
-.definitionSection {
-    display: flex;
-    flex-direction: column;
     gap: 8px;
 }
 
-.definitionEn {
-    margin: 0;
-    color: #334155;
-    font-size: var(--text-base, 1rem);
-    line-height: 1.5;
+.lemmaTxt {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
 }
 
-.zhContainer {
-    min-height: 22px;
+:global(.darkTheme) .lemmaTxt {
+    color: #E2E8F0 !important;
 }
-
-.definitionCn {
-    margin: 0;
-    color: #64748b;
-    font-size: var(--text-base, 1rem);
-    line-height: 1.5;
-}
-
-.revealBtn {
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    color: #0f172a;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.revealBtn:hover {
-    background: #f1f5f9;
-}
-
-.exampleSection {
-    background: #f8fafc;
-    border-radius: 14px;
-    padding: 12px;
-}
-
-.exampleItem {
-    color: #334155;
-    font-size: var(--text-sm, 0.875rem);
-    line-height: 1.6;
-}
-
-/* ─── Responsive ─── */
-
-@media (max-width: 768px) {
-    .cardShell {
-        width: 100%;
-        min-height: 0;
-    }
-
-    .cardHeader {
-        padding: 20px 16px 12px;
-    }
-
-    .cardBody {
-        padding: 0 16px 16px;
-    }
-}
-
-/* ─── Dark Mode ─── */
 
 @media (prefers-color-scheme: dark) {
-    .cardShell {
-        background: linear-gradient(180deg, #182338 0%, #121b2b 100%);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.40);
+    .lemmaTxt {
+        color: #E2E8F0 !important;
     }
+}
 
-    .mainWord {
-        color: #e2e8f0;
-    }
+.smallAudioBtn {
+    background: #2563EB;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    cursor: pointer;
+}
 
-    .mainWord:active {
-        color: #60a5fa;
-    }
+.posTag {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+}
 
-    .phoneticText {
-        color: #d5dde8;
-    }
+:global(.darkTheme) .posTag {
+    color: #D5DDE8 !important;
+}
 
-    .audioBtn {
-        background: #4f7dba;
-        color: #0f172a;
-    }
-
-    .scissorBtn {
-        color: #94a3b8;
-    }
-
-    .scissorBtn.active,
-    .scissorBtn:hover {
-        color: #60a5fa;
-    }
-
-    .syllableChip {
-        border-color: #334155;
-        background: #1e293b;
-        color: #93c5fd;
-    }
-
-    .syllableChip.playing {
-        background: #4f7dba;
-        border-color: #4f7dba;
-        color: #0f172a;
-    }
-
-    .syllablePhonetic {
-        color: #94a3b8;
-    }
-
+@media (prefers-color-scheme: dark) {
     .posTag {
-        color: #d5dde8;
+        color: #D5DDE8 !important;
     }
+}
 
-    .lemmaText {
-        color: #e2e8f0;
-    }
+/* Back Section */
+.back {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
-    .lemmaAudioBtn {
-        background: #4f7dba;
-        color: #0f172a;
-    }
+.divider {
+    height: 1px;
+    background: #E2E8F0;
+}
 
+:global(.darkTheme) .divider {
+    background: #334155 !important;
+}
+
+@media (prefers-color-scheme: dark) {
     .divider {
-        background: #334155;
+        background: #334155 !important;
     }
+}
 
-    .definitionEn {
-        color: #f1f5f9;
+.definition {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.defEn {
+    font-size: 15px;
+    line-height: 1.45;
+    color: #334155;
+    margin: 0;
+}
+
+:global(.darkTheme) .defEn {
+    font-size: 14px;
+    color: #F1F5F9 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .defEn {
+        font-size: 14px;
+        color: #F1F5F9 !important;
     }
+}
 
-    .definitionCn {
-        color: #94a3b8;
-    }
+.defZh {
+    font-size: 14px;
+    color: #64748B;
+    margin: 0;
+}
 
-    .revealBtn {
-        border-color: #475569;
-        background: #1e293b;
-        color: #e2e8f0;
-    }
+.exampleCard {
+    background: #F8FAFC;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+}
 
-    .revealBtn:hover {
-        background: #334155;
-    }
+:global(.darkTheme) .exampleCard {
+    background: #0B1220 !important;
+    padding: 12px;
+    color: #F1F5F9 !important;
+}
 
-    .exampleSection {
-        background: #0b1220;
-    }
-
-    .exampleItem {
-        color: #f1f5f9;
+@media (prefers-color-scheme: dark) {
+    .exampleCard {
+        background: #0B1220 !important;
+        padding: 12px;
+        color: #F1F5F9 !important;
     }
 }

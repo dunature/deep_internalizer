@@ -548,3 +548,93 @@
     min-height: 60vh;
     color: var(--color-text-muted);
 }
+
+/* 1:1 Step 2 Vocabulary Build (KqZtO / 3Zcky) */
+.step2Body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 20px 32px;
+}
+
+.step2Header {
+    width: 700px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748B;
+}
+
+.darkTheme .step2Header { width: 760px; color: #D5DDE8 !important; }
+@media (prefers-color-scheme: dark) { .step2Header { width: 760px; color: #D5DDE8 !important; } }
+
+.wordActions {
+    display: flex;
+    gap: 16px;
+    width: 700px;
+}
+
+.darkTheme .wordActions { width: 760px; }
+@media (prefers-color-scheme: dark) { .wordActions { width: 760px; } }
+
+.knowBtn, .addBtn {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.knowBtn {
+    background: #FFFFFF;
+    border: 1px solid #CBD5F5;
+    color: #2563EB;
+}
+
+.addBtn {
+    background: #2563EB;
+    color: #FFFFFF;
+    border: none;
+}
+
+.addBtn.added {
+    background: #10B981;
+}
+
+.darkTheme .knowBtn { 
+    height: 44px; 
+    background: #0F172A !important; 
+    border-color: #334155 !important; 
+    color: #60A5FA !important; 
+}
+
+@media (prefers-color-scheme: dark) {
+    .knowBtn { 
+        height: 44px; 
+        background: #0F172A !important; 
+        border-color: #334155 !important; 
+        color: #60A5FA !important; 
+    }
+}
+
+.darkTheme .addBtn { 
+    height: 44px; 
+    background: #4F7DBA !important; 
+    color: #FFFFFF !important; 
+}
+
+@media (prefers-color-scheme: dark) {
+    .addBtn { 
+        height: 44px; 
+        background: #4F7DBA !important; 
+        color: #FFFFFF !important; 
+    }
+}

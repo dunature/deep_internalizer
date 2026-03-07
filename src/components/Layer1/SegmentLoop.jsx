@@ -462,9 +462,12 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     }
 
     return (
-        <div className={`${styles.stepContent} ${styles.step2Content}`}>
+        <div className={styles.step2Body}>
+            <div className={styles.step2Header}>
+                Word {currentWordIndex + 1} of {words.length}
+            </div>
 
-            {/* Interactive Word Card Component */}
+            {/* 1:1 Interactive Word Card (bHrtK / HF5Am) */}
             <VocabularyCard
                 word={currentWord}
                 speak={speak}
@@ -472,20 +475,22 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                 isBilingual={isBilingual}
             />
 
-            {/* Action buttons */}
+            {/* 1:1 Action buttons (Cf2ZK / KwbjZ) */}
             <div className={styles.wordActions}>
                 <button
-                    className={`btn btn-secondary ${styles.actionBtn}`}
+                    className={styles.knowBtn}
                     onClick={handleSkipWord}
                     disabled={isAdding}
                 >
                     {alreadyAdded ? (isLastWord ? 'Finish →' : 'Next word →') : 'I know this'}
                 </button>
-                <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} className={styles.actionBtn} />
-            </div>
-
-            <div className={styles.stepProgress}>
-                Word {currentWordIndex + 1} of {words.length}
+                <button 
+                    className={`${styles.addBtn} ${alreadyAdded ? styles.added : ''}`}
+                    onClick={handleAddWord}
+                    disabled={isAdding}
+                >
+                    {isAdding ? 'Adding...' : (alreadyAdded ? 'Added ✓' : 'Add to vocabulary')}
+                </button>
             </div>
         </div>
     );

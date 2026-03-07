@@ -198,31 +198,40 @@ db.wordAudio.get(text)                  // TTS 音频缓存读取
 
 ## 📌 页面 5 — Layer 1, Step 4（流利输出 Flow Practice）
 
-> ⚠️ 本次自动化截图中 Step 4 页面未能到达，以下功能点通过代码分析推导。
+> ⚠️ **设计偏差提示**：当前提供的 Step 4 设计图（内含 "Focused Reading" 及单个词汇的发音、例句等元素）存在明显逻辑偏差，混淆了 Step 2 (词汇构建) 与 Step 4 (段落流利通读) 的核心功能。
+> 
+> 以下功能点严格基于**当前项目实际代码（`SegmentLoop.jsx -> Step4FlowPractice`）**的真实实现进行梳理，请作为页面重构的基准参考。
 
 ### 界面视觉元素 (UI Elements)
-- **Layer 1 Header & Step Tabs**: 与前置步骤复用。
-- **Title Block**: 标题 `Flow Practice` 及通读提示。
-- **Full Text Container (全文本容器)**: 与逐段不同的无分页无障碍全屏长文本阅读视图 (Full screen article view)。
-- **Global Playback Strip (全局播放控制条)**: 吸底或悬浮的播放器，控制整篇文章的播放、暂停与进度。
-- **Bilingual Subtext (双语贴边)**: 逐句的双语对照阅读格式 (Side-by-side or Interleaved lines)。
-- **Completion Checkpoint (归档核验点)**: 位于文章末尾的大号完成按钮 `Mark Chunk as Completed`。
+- **Layer 1 Header & Step Tabs**: 与前置步骤复用（全局导航头、面包屑、步骤标签）。
+- **Title Block (意图区块)**: 
+  - `Step 4` 标签。
+  - 主标题 `Flow Practice`。
+  - 操作提示说明 `Read the full passage — words you've learned are highlighted`。
+- **Flow Passage (全文本容器)**:
+  - 沉浸式阅读视图，完整呈现当前 Chunk 的原文大段落 (`chunk.originalText`)，并按纯文本的换行符分割渲染为自然段落。
+- **Vocabulary Highlights (已学词汇锚点高亮)**: 
+  - 原文段落中，在 Step 2 里学习过的词汇会带有特殊的底色高亮（`<mark>` 标签标记），辅助进行语境回忆。
+- **Completion Checkpoint (归档核验点)**: 
+  - 位于文章内容区域最下方的大号主操作按钮 `Complete Chunk ✓`。
 
 ### 功能点
 
 | # | 功能 | 描述 |
 |---|------|------|
-| 1 | **完整段落展示** | 展示整个 `chunk.originalText`，供流利朗读练习 |
-| 2 | **TTS 全段朗读** | 整段文本转语音播放 |
-| 3 | **双语对照** | 句子下方显示翻译 |
-| 4 | **完成 Chunk** | 点击完成后 `chunk.completed = true`，写入 `userStats.segments += 1` |
+| 1 | **完整段落纯净展示** | 按自然段展示整个 `chunk.originalText`全文，无分页、无碎片卡片，供通顺的流利阅读练习 |
+| 2 | **词汇记忆强化 (Highlighting)** | 纯本地提取拦截：通过正则匹配，将军在 Step 2 展示过的核心学习词汇 (`words`) 在当前全局文本中高亮标示出来 |
+| 3 | **完成结业操作 Chunk** | 点击 `Complete Chunk ✓` 触发 `onComplete()`，向上层级组件汇报完成态，触发后续视图切换和数据归档 |
+| 4 | **(当前实情) 无额外打扰** | *注：与早期推测不同，实际组件中并未实装悬浮全局 TTS 控制条或逐句双语对照功能，重构需保持当前这种纯英语、无打扰的回忆型阅读基调* |
 
 ### 后台数据调用
 
+> Step 4 组件内部为纯展示层，核心写库操作由外层级的容器监听完成回调执行。
+
 ```js
-db.chunks.update(id, { completed: true, currentStep: 4 })  // 标记完成
-incrementUserStats({ segments: 1 })                         // 更新热图计数
-saveReadingSession({ docId, chunkIndex, step: 4 })          // 写入 readingSessions
+// 由点击外层 App.jsx 回调触发的数据更新动作：
+db.chunks.update(id, { completed: true, currentStep: 4 })  // 标记当前切片为真闭环完成
+incrementUserStats({ segments: 1 })                         // 记入学习总热图统计
 ```
 
 ---
