@@ -1,6 +1,6 @@
 /**
- * Vocabulary Card Component
- * Single-face vocabulary card (day variant)
+ * Vocabulary Card Component - Step 2 Baseline
+ * 1:1 Replica of Pencil Design (sSPCS / vK0th)
  */
 import { useState, useEffect } from 'react';
 import styles from './VocabularyCard.module.css';
@@ -31,7 +31,6 @@ export default function VocabularyCard({
     const handlePlaySyllable = async (e, slice, index) => {
         e.stopPropagation();
         setActiveSyllable(index);
-        // Use speakSyllable for cached syllable playback at slower speed
         await speak(slice.text, { type: 'syllable', speed: 0.7 });
         setActiveSyllable(null);
     };
@@ -43,46 +42,44 @@ export default function VocabularyCard({
     }, [word]);
 
     return (
-        <div className={styles.cardShell}>
-            <div className={styles.cardHeader}>
-                <h2
-                    className={styles.mainWord}
-                    onClick={() => speak(wordText)}
-                    style={{ cursor: 'pointer' }}
-                >
+        <div className={styles.card}>
+            {/* 1:1 Front Section (I1yhf / ePQcj) */}
+            <div className={styles.front}>
+                <h2 className={styles.mainWord} onClick={() => speak(wordText)}>
                     {wordText}
                 </h2>
-                <div className={styles.phoneticRow}>
-                    <span className={styles.phoneticText}>{word.phonetic}</span>
-                    <button
-                        className={styles.audioBtn}
-                        onClick={() => speak(wordText)}
-                        disabled={isTTSLoading}
-                        title="Play word pronunciation"
-                    >
-                        {isTTSLoading ? '...' : '🔊'}
-                    </button>
-                    <button
-                        className={`${styles.scissorBtn} ${isSplit ? styles.active : ''}`}
-                        onClick={toggleSplit}
-                        title="Split into syllables"
-                    >
-                        ✂️
-                    </button>
+                <div className={styles.phonRow}>
+                    <span className={styles.phonText}>{word.phonetic}</span>
+                    <div className={styles.phonActions}>
+                        <button
+                            className={styles.audioIconBtn}
+                            onClick={() => speak(wordText)}
+                            disabled={isTTSLoading}
+                        >
+                            {isTTSLoading ? '...' : '🔊'}
+                        </button>
+                        <button
+                            className={`${styles.scissorBtn} ${isSplit ? styles.active : ''}`}
+                            onClick={toggleSplit}
+                        >
+                            ✂️
+                        </button>
+                    </div>
                 </div>
+
                 {isSplit && word.slices && (
-                    <div className={styles.syllableContainer}>
+                    <div className={styles.syllableGrid}>
                         {word.slices.map((slice, idx) => (
                             <div
                                 key={idx}
-                                className={styles.syllableColumn}
+                                className={styles.syllableNode}
                                 onClick={(e) => handlePlaySyllable(e, slice, idx)}
                             >
-                                <span className={`${styles.syllableChip} ${activeSyllable === idx ? styles.playing : ''}`}>
+                                <span className={`${styles.syllableBox} ${activeSyllable === idx ? styles.playing : ''}`}>
                                     {slice.text}
                                 </span>
                                 {slice.phonetic && (
-                                    <span className={styles.syllablePhonetic}>{slice.phonetic}</span>
+                                    <span className={styles.syllablePhon}>{slice.phonetic}</span>
                                 )}
                             </div>
                         ))}
@@ -90,49 +87,31 @@ export default function VocabularyCard({
                 )}
             </div>
 
-            <div className={styles.cardBody}>
-                <div className={styles.lemmaRow}>
-                    <div className={styles.lemmaLeft}>
-                        <span className={styles.lemmaText}>{wordText}</span>
-                        <button
-                            className={styles.lemmaAudioBtn}
-                            onClick={() => speak(wordText)}
-                            disabled={isTTSLoading}
-                            title="Play word pronunciation"
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div className={styles.lemmaRight}>
-                        {word.pos && <span className={styles.posTag}>{word.pos}</span>}
-                    </div>
+            {/* 1:1 BackHead Section (XIoId / kLNtA) */}
+            <div className={styles.backHead}>
+                <div className={styles.lemmaLeft}>
+                    <span className={styles.lemmaTxt}>{wordText}</span>
+                    <button className={styles.smallAudioBtn} onClick={() => speak(wordText)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                    </button>
                 </div>
+                <div className={styles.posTag}>{word.pos || 'n.'}</div>
+            </div>
+
+            {/* 1:1 Back Section (p199e / GDfqS) */}
+            <div className={styles.back}>
                 <div className={styles.divider}></div>
-                <div className={styles.definitionSection}>
-                    <p className={styles.definitionEn}>{word.definition}</p>
-                    {word.definition_zh && (
-                        <div className={styles.zhContainer}>
-                            {isZhVisible ? (
-                                <p className={styles.definitionCn}>{word.definition_zh}</p>
-                            ) : (
-                                <button
-                                    className={styles.revealBtn}
-                                    onClick={() => setIsZhVisible(true)}
-                                >
-                                    中
-                                </button>
-                            )}
-                        </div>
+                <div className={styles.definition}>
+                    <p className={styles.defEn}>{word.definition}</p>
+                    {isZhVisible && word.definition_zh && (
+                        <p className={styles.defZh}>{word.definition_zh}</p>
                     )}
                 </div>
-                <div className={styles.exampleSection}>
-                    <div className={styles.exampleItem}>
-                        <HighlightedText text={sentenceText} highlight={wordText} />
-                    </div>
+                <div className={styles.exampleCard}>
+                    <HighlightedText text={sentenceText} highlight={wordText} />
                 </div>
             </div>
         </div>

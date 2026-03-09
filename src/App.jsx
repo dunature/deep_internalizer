@@ -65,10 +65,11 @@ function App() {
     setCurrentStep,
     checkDebt,
     grantEmergencyAccess,
-    restoreSession
+    restoreSession,
+    theme
   } = useAppStore();
 
-  const [document, setDocument] = useState(null);
+  const [currentDocument, setCurrentDocumentState] = useState(null);
   const [chunks, setChunks] = useState([]);
   const [chunkWords, setChunkWords] = useState([]);
   const [pendingWords, setPendingWords] = useState([]);
@@ -77,6 +78,15 @@ function App() {
   const [processingStep, setProcessingStep] = useState('');
   const [processingMeta, setProcessingMeta] = useState(null);
   const [currentView, setCurrentView] = useState(VIEW.EMPTY);
+
+  // Synchronize global theme with document body
+  useEffect(() => {
+    if (theme === 'dark') {
+      globalThis.document.body.classList.add('darkTheme');
+    } else {
+      globalThis.document.body.classList.remove('darkTheme');
+    }
+  }, [theme]);
 
 
   // Async operation guard: prevents stale callbacks from updating state
@@ -260,7 +270,7 @@ function App() {
   const loadDocument = async (docId) => {
     const doc = await getDocumentWithChunks(docId);
     if (doc) {
-      setDocument(doc);
+      setCurrentDocumentState(doc);
       setChunks(doc.chunks || []);
     }
   };
@@ -575,7 +585,7 @@ function App() {
   // Handle emergency access
   const handleEmergencyAccess = () => {
     if (grantEmergencyAccess()) {
-      setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
+      setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
     }
   };
 
@@ -719,7 +729,7 @@ function App() {
     await checkDebt();
     // After a review session, allow users to return to their previously active view
     // (either the Map or the Empty state)
-    setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
+    setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
   };
 
   // Render based on current view
@@ -736,21 +746,23 @@ function App() {
 
     case VIEW.REVIEW:
       return (
-        <VocabularyReview
-          words={pendingWords}
-          onKeep={handleKeepWord}
-          onArchive={handleArchiveWord}
-          onComplete={handleReviewComplete}
-          onBack={() => {
-            cancelPendingOperations();
-            setCurrentView(VIEW.INTERCEPTION);
-          }}
-        />
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
+          <VocabularyReview
+            words={pendingWords}
+            onKeep={handleKeepWord}
+            onArchive={handleArchiveWord}
+            onComplete={handleReviewComplete}
+            onBack={() => {
+              cancelPendingOperations();
+              setCurrentView(VIEW.INTERCEPTION);
+            }}
+          />
+        </div>
       );
 
     case VIEW.EMPTY:
       return (
-        <div className="empty-state">
+        <div className={`empty-state ${theme === 'dark' ? 'darkTheme' : ''}`}>
           <div className="empty-content">
             <h1>Deep Internalizer</h1>
             <p>Transform reading into deep learning</p>
@@ -779,32 +791,15 @@ function App() {
 
     case VIEW.LAYER1:
       return (
-        <div className="app">
-          <nav className={`top-nav ${currentStep === 2 ? 'nav-step2' : ''}`}>
-            <div className="breadcrumb">
-              <span
-                className="breadcrumb-item clickable"
-                onClick={handleBackToMap}
-              >
-                Global Map
-              </span>
-              <span className="breadcrumb-sep">›</span>
-              <span className="breadcrumb-item">
-                Chunk #{currentChunkIndex + 1}
-              </span>
-              <span className="breadcrumb-sep">›</span>
-              <span className="breadcrumb-item active">
-                Step {currentStep}
-              </span>
-            </div>
-          </nav>
-
+        <div className={`app ${theme === 'dark' ? 'darkTheme' : ''}`}>
+          {/* Header is now handled inside SegmentLoop to align with Pencil design */}
           <main className="main-content">
             <SegmentLoop
               chunk={chunks[currentChunkIndex]}
               words={chunkWords}
               currentStep={currentStep}
               onStepComplete={handleStepComplete}
+              onStepSet={setCurrentStep}
               onWordAction={handleWordAction}
               onBack={handleBackToMap}
             />
@@ -814,58 +809,40 @@ function App() {
 
     case VIEW.PROFILE:
       return (
-        <UserProfile
-          onBack={() => {
-            cancelPendingOperations();
-            setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
-          }}
-        />
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
+          <UserProfile
+            onBack={() => {
+              cancelPendingOperations();
+              setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
+            }}
+          />
+        </div>
       );
 
     case VIEW.LAYER0:
     default:
       return (
-        <div className="app">
-          <nav className="top-nav">
-            <div className="breadcrumb">
-              <span className="breadcrumb-item active">Global Map</span>
-            </div>
-
-            <div className="nav-actions">
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  cancelPendingOperations();
-                  setCurrentView(VIEW.PROFILE);
-                }}
-                title="User Profile"
-              >
-                👤
-              </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowImport(true)}
-              >
-                + New
-              </button>
-            </div>
-          </nav>
-
-          <main className="main-content">
-            {isLoading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Loading...</p>
-              </div>
-            ) : (
-              <GlobalBlueprint
-                document={document}
-                chunks={chunks}
-                currentChunkIndex={currentChunkIndex}
-                onChunkSelect={handleChunkSelect}
-              />
-            )}
-          </main>
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
+          <div className="app">
+            {/* Header is now handled inside GlobalBlueprint to align with Pencil design */}
+            <main className="main-content">
+              {isLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading...</p>
+                </div>
+              ) : (
+                <GlobalBlueprint
+                  document={currentDocument}
+                  chunks={chunks}
+                  currentChunkIndex={currentChunkIndex}
+                  onChunkSelect={handleChunkSelect}
+                  onShowImport={() => setShowImport(true)}
+                  onShowProfile={() => setCurrentView(VIEW.PROFILE)}
+                />
+              )}
+            </main>
+          </div>
 
           <ImportModal
             isOpen={showImport}
@@ -876,7 +853,6 @@ function App() {
             processingStep={processingStep}
             processingMeta={processingMeta}
             processingSteps={IMPORT_STEPS}
-
           />
           <PWAPrompt />
           <OfflineIndicator />

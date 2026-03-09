@@ -17,6 +17,7 @@ export const useAppStore = create(
             pendingWordCount: 0,
             emergencyAccessLeft: 3,
             vocabularyAutoNextOnAdd: false,
+            theme: 'light',
 
             // UI state
             isLoading: false,
@@ -24,6 +25,10 @@ export const useAppStore = create(
 
             // Actions
             setLoading: (isLoading) => set({ isLoading }),
+            setTheme: (theme) => set({ theme }),
+            toggleTheme: () => set((state) => ({ 
+                theme: state.theme === 'light' ? 'dark' : 'light' 
+            })),
 
             setCurrentDocument: (docId) => set({
                 currentDocId: docId,

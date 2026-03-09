@@ -23,9 +23,12 @@ export default function SegmentLoop({
     words: externalWords = [],
     currentStep,
     onStepComplete,
+    onStepSet,
     onWordAction,
     onBack
 }) {
+    const toggleTheme = useAppStore(state => state.toggleTheme);
+    const theme = useAppStore(state => state.theme);
     const [isBilingual, setIsBilingual] = useState(false);
     const [prefetchedWords, setPrefetchedWords] = useState(null); // null = loading, [] = loaded empty
     const [prefetchError, setPrefetchError] = useState(false);
@@ -143,7 +146,14 @@ export default function SegmentLoop({
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
-                return <Step1MacroContext chunk={chunk} isBilingual={isBilingual} onComplete={() => onStepComplete(1)} />;
+                return (
+                    <Step1MacroContext
+                        chunk={chunk}
+                        isBilingual={isBilingual}
+                        onComplete={() => onStepComplete(1)}
+                        onExploreMap={onBack}
+                    />
+                );
             case 2:
                 return (
                     <Step2VocabularyBuild
@@ -171,75 +181,122 @@ export default function SegmentLoop({
     };
 
     return (
-        <div className={styles.container}>
-            {/* Step indicator */}
-            {currentStep !== 2 && (
-                <div className={styles.stepIndicator}>
-                    {STEPS.map((step) => (
-                        <div
-                            key={step.id}
-                            className={`${styles.step} ${currentStep === step.id ? styles.active : ''} ${currentStep > step.id ? styles.completed : ''}`}
-                        >
-                            <span className={styles.stepIcon}>{step.icon}</span>
-                            <span className={styles.stepName}>{step.name}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+        <div className={`${styles.container} ${currentStep === 1 ? styles.containerStep1 : ''} ${theme === 'dark' ? `${styles.darkTheme} darkTheme` : ''}`}>
+            {/* Header (Nav) */}
+            <header className={`${styles.header} ${currentStep === 1 ? styles.headerStep1 : (currentStep === 2 ? styles.headerStep2 : '')}`}>
+                <div className={styles.headerInner}>
+                    <div className={styles.navLeft}>
+                        <div className={styles.breadcrumb}>Global Map &gt; Chunk #1 &gt; Step {currentStep}</div>
+                        <button className={styles.backLink} onClick={onBack}>
+                            ← Back to Map
+                        </button>
+                    </div>
 
-            {/* Chunk header */}
-            <header className={`${styles.header} ${currentStep === 2 ? styles.headerStep2 : ''}`}>
-                <button className={`btn btn-ghost ${styles.backBtn}`} onClick={onBack}>
-                    ← Back to Map
-                </button>
-                <h2 className={styles.chunkTitle}>{chunk.title}</h2>
-                <button
-                    className={`${styles.bilingualBtn} ${isBilingual ? styles.active : ''}`}
-                    onClick={() => setIsBilingual(!isBilingual)}
-                    title={isBilingual ? "Hide Chinese" : "Show Chinese"}
-                >
-                    中/EN
-                </button>
+                    <h2 className={styles.chunkTitle}>
+                        {currentStep === 1 ? "Macro Context Summary" : chunk.title}
+                    </h2>
+
+                    <div className={styles.topRight}>
+                        <button
+                            className={`${styles.themeToggle} ${theme === 'dark' ? styles.active : ''}`}
+                            onClick={toggleTheme}
+                        >
+                            Theme
+                        </button>
+                        <button
+                            className={`${styles.bilingualBtn} ${isBilingual ? styles.active : ''}`}
+                            onClick={() => setIsBilingual(!isBilingual)}
+                        >
+                            中/EN
+                        </button>
+                    </div>
+                </div>
             </header>
+
+            {/* Step Tabs (All Phases) */}
+            <div className={styles.stepTabsWrapper}>
+                <div className={styles.stepTabs}>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 1 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(1)}
+                    >
+                        Step 1 · Macro Context
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 2 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(2)}
+                    >
+                        Step 2 · Baseline Language
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 3 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(3)}
+                    >
+                        Step 3 · Articulation Practice
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 4 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(4)}
+                    >
+                        Step 4 · Flow Practice
+                    </button>
+                </div>
+            </div>
 
             {/* Step content */}
             <main className={`${styles.content} ${currentStep === 2 ? styles.contentStep2 : ''}`}>
                 {renderStepContent()}
-            </main>
-        </div>
+            </main>        </div>
     );
 }
 
 /**
  * Step 1: Macro Context - Summary overview
  */
-function Step1MacroContext({ chunk, isBilingual, onComplete }) {
+function Step1MacroContext({ chunk, isBilingual, onComplete, onExploreMap }) {
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 1</span>
-                <h3>Macro Context</h3>
-                <p className={styles.stepDesc}>Read the summary to understand the big picture</p>
+        <div className={styles.macroBody}>
+            {/* Left Column: Primary Summary */}
+            <div className={styles.primarySummary}>
+                <div className={styles.macroKicker}>Macro Context</div>
+                <h2 className={styles.macroMainTitle}>{chunk.title || "Macro Summary"}</h2>
+                <div className={styles.macroMainBody}>
+                    <p>{chunk.summary}</p>
+                </div>
+
+                <div className={styles.macroSpacer} />
+
+                <div className={styles.macroCtaRow}>
+                    <button className={`btn btn-secondary btn-large ${styles.actionBtn}`} onClick={onExploreMap}>
+                        Explore Map
+                    </button>
+                    <button className={`btn btn-primary btn-large ${styles.actionBtn}`} onClick={onComplete}>
+                        Build Vocabulary →
+                    </button>
+                </div>
             </div>
 
-            <div className={styles.summaryCard}>
-                <p className={styles.summary}>{chunk.summary}</p>
+            {/* Right Column: Secondary & Tertiary Info */}
+            <div className={styles.secondaryTertiary}>
                 {isBilingual && chunk.summary_zh && (
-                    <p className={styles.summaryZh}>{chunk.summary_zh}</p>
+                    <div className={styles.cnSummary}>
+                        <div className={styles.columnLabel}>CN SUMMARY</div>
+                        <p className={styles.cnText}>{chunk.summary_zh}</p>
+                    </div>
                 )}
-            </div>
 
-            <div className={styles.originalPreview}>
-                <h4>Original Text Preview</h4>
-                <p className={styles.originalText}>
-                    {chunk.originalText?.substring(0, 300)}
-                    {chunk.originalText?.length > 300 ? '...' : ''}
-                </p>
+                <div className={styles.originalPreviewCard}>
+                    <div className={styles.columnLabel}>ORIGINAL PREVIEW</div>
+                    <p className={styles.previewText}>
+                        {chunk.originalText?.substring(0, 240)}
+                        {chunk.originalText?.length > 240 ? '...' : ''}
+                    </p>
+                    <div className={styles.tertiaryStrip}>
+                        <span>{chunk.originalText?.length || 0} characters</span>
+                        <span>Full text below</span>
+                    </div>
+                </div>
             </div>
-
-            <button className="btn btn-primary btn-large" onClick={onComplete}>
-                I understand the context →
-            </button>
         </div>
     );
 }
@@ -362,14 +419,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     // Show loading state while keywords are being fetched
     if (isLoadingWords) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>AI is analyzing text...</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-
-                {/* Skeleton Loading Cards */}
                 <div className={styles.skeletonContainer}>
                     <div className={styles.skeletonCard}>
                         <div className={styles.skeletonWord}></div>
@@ -377,10 +430,9 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                         <div className={styles.skeletonDefinition}></div>
                     </div>
                 </div>
-
                 <div className={styles.loadingSpinner}>
                     <div className="spinner"></div>
-                    <p>🔍 Extracting key vocabulary<span className={styles.loadingDots}></span></p>
+                    <p>🔍 Extracting key vocabulary...</p>
                 </div>
             </div>
         );
@@ -388,13 +440,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (isDeferred) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>Preparing word cards...</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-
                 <div className={styles.skeletonContainer}>
                     <div className={styles.skeletonCard}>
                         <div className={styles.skeletonWord}></div>
@@ -408,23 +457,27 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (!hasWords) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>No key words extracted for this chunk</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-                <button className="btn btn-primary" onClick={onComplete}>
-                    Continue to next step →
+                <div className={styles.emptyCard}>
+                    <p className={styles.emptyText}>No key words extracted for this chunk.</p>
+                </div>
+                <button className={styles.completeCta} style={{ width: '700px' }} onClick={onComplete}>
+                    Continue to Articulation →
                 </button>
             </div>
         );
     }
 
     return (
-        <div className={`${styles.stepContent} ${styles.step2Content}`}>
+        <div className={styles.step2Body}>
+            <div className={styles.step2Header}>
+                Word {currentWordIndex + 1} of {words.length}
+            </div>
 
-            {/* Interactive Word Card Component */}
+            {/* 1:1 Interactive Word Card (bHrtK / HF5Am) */}
             <VocabularyCard
                 word={currentWord}
                 speak={speak}
@@ -432,20 +485,22 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                 isBilingual={isBilingual}
             />
 
-            {/* Action buttons */}
+            {/* 1:1 Action buttons (Cf2ZK / KwbjZ) */}
             <div className={styles.wordActions}>
                 <button
-                    className="btn btn-secondary"
+                    className={styles.knowBtn}
                     onClick={handleSkipWord}
                     disabled={isAdding}
                 >
                     {alreadyAdded ? (isLastWord ? 'Finish →' : 'Next word →') : 'I know this'}
                 </button>
-                <AddButton onClick={handleAddWord} isBusy={isAdding} isAdded={alreadyAdded} />
-            </div>
-
-            <div className={styles.stepProgress}>
-                Word {currentWordIndex + 1} of {words.length}
+                <button 
+                    className={`${styles.addBtn} ${alreadyAdded ? styles.added : ''}`}
+                    onClick={handleAddWord}
+                    disabled={isAdding}
+                >
+                    {isAdding ? 'Adding...' : (alreadyAdded ? 'Added ✓' : 'Add to vocabulary')}
+                </button>
             </div>
         </div>
     );
@@ -464,7 +519,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     const originalText = chunk?.originalText;
     const chunkId = chunk?.id;
 
-    // Reset state when chunk changes (during render, not in effect)
+    // Reset state when chunk changes
     if (chunkId !== lastChunkIdRef.current) {
         lastChunkIdRef.current = chunkId;
         if (translations !== null) {
@@ -475,7 +530,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
         }
     }
 
-    // Split chunk text into sentences - memoize to stabilize reference
+    // Split chunk text into sentences
     const sentences = useMemo(() => {
         if (!originalText) return [];
         return originalText
@@ -484,10 +539,10 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
             .slice(0, 5); // Limit to 5 sentences
     }, [originalText]);
 
-    // Derive loading state from data presence
+    // Derive loading state
     const isLoadingTranslations = translations === null && sentences.length > 0 && chunkId;
 
-    // Fetch translations on mount
+    // Fetch translations
     useEffect(() => {
         if (!chunkId || sentences.length === 0) {
             return;
@@ -495,7 +550,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
 
         prefetchService.prefetchTranslations(chunkId, sentences)
             .then(result => setTranslations(result || []))
-            .catch(() => setTranslations([])); // On error, set empty array
+            .catch(() => setTranslations([]));
     }, [chunkId, sentences]);
 
     const currentSentence = sentences[currentSentenceIndex];
@@ -503,7 +558,7 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     const isLast = currentSentenceIndex >= sentences.length - 1;
 
     const handleNext = () => {
-        stop(); // Stop audio if playing
+        stop();
         if (isLast) {
             onComplete();
         } else {
@@ -521,12 +576,8 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
 
     if (sentences.length === 0) {
         return (
-            <div className={styles.stepContent}>
-                <div className={styles.stepHeader}>
-                    <span className={styles.stepLabel}>Step 3</span>
-                    <h3>Articulation</h3>
-                    <p className={styles.stepDesc}>No sentences to practice</p>
-                </div>
+            <div className={styles.empty}>
+                <p>No sentences to practice</p>
                 <button className="btn btn-primary" onClick={onComplete}>
                     Continue →
                 </button>
@@ -535,16 +586,12 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
     }
 
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 3</span>
-                <h3>Articulation</h3>
-                <p className={styles.stepDesc}>
-                    Sentence {currentSentenceIndex + 1} of {sentences.length}
-                </p>
+        <div className={styles.articulationBody}>
+            <div className={styles.stepInfo}>
+                Sentence {currentSentenceIndex + 1} of {sentences.length}
             </div>
 
-            {/* Thought Group Interactive Card */}
+            {/* 1:1 Sentence Card (KUXuU / hcMLo) */}
             <SentenceCard
                 sentence={currentSentence}
                 translation={currentTranslation || (isLoadingTranslations ? "Translating..." : "")}
@@ -552,22 +599,24 @@ function Step3Articulation({ chunk, onComplete, isBilingual }) {
                 isBilingual={isBilingual}
             />
 
-            <div className={styles.audioControls}>
+            {/* 1:1 Action Rows (nHjs1 / wrgBa) */}
+            <div className={styles.actionRowPrimary}>
                 <button
-                    className={`btn ${isPlaying ? 'btn-secondary' : 'btn-ghost'} ${styles.audioBtn}`}
+                    className={`${styles.playCta} ${isPlaying ? styles.isPlaying : ''}`}
                     onClick={handlePlay}
                     disabled={isLoading}
-                    title={error ? `Error: ${error}` : "Listen to full sentence"}
-                    style={{ opacity: 1, cursor: 'pointer' }}
                 >
-                    {isLoading ? '⏳' : isPlaying ? '⏹️ Stop Full' : '🔊 Full Sentence'}
+                    {isLoading ? 'Loading...' : (isPlaying ? 'Stop Audio' : 'Play Audio')}
                 </button>
-                {error && <span className={styles.errorText} style={{ color: 'red', fontSize: '12px', marginLeft: '10px' }}>⚠️ TTS Error</span>}
             </div>
 
-            <button className="btn btn-primary btn-large" onClick={handleNext}>
-                {isLast ? 'Continue to Flow Practice →' : 'Next Sentence →'}
-            </button>
+            <div className={styles.actionRowSecondary}>
+                <button className={styles.nextCta} onClick={handleNext}>
+                    {isLast ? 'Complete Articulation ✓' : 'Next Sentence →'}
+                </button>
+            </div>
+
+            {error && <div className={styles.errorBanner}>⚠️ {error}</div>}
         </div>
     );
 }
@@ -584,7 +633,7 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
             .split(/\n\s*\n/)
             .map(p => p.trim())
             .filter(p => p.length > 0);
-    }, [chunk?.originalText]);
+    }, [chunk.originalText]);
 
     // Build a set of learned word texts for highlighting
     const learnedWords = useMemo(() => {
@@ -615,26 +664,34 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
     };
 
     return (
-        <div className={styles.stepContent}>
-            <div className={styles.stepHeader}>
-                <span className={styles.stepLabel}>Step 4</span>
-                <h3>Flow Practice</h3>
-                <p className={styles.stepDesc}>
-                    Read the full passage — words you've learned are highlighted
-                </p>
-            </div>
+        <div className={styles.flowBody}>
+            <div className={styles.flowContent}>
+                {/* 1:1 Flow Card (k3TwR / aIBQS) */}
+                <div className={styles.flowCard}>
+                    <div className={styles.titleBlock}>
+                        <div className={styles.stepKicker}>Step 4</div>
+                        <h2 className={styles.flowTitle}>Flow Practice</h2>
+                        <p className={styles.flowDesc}>
+                            Read the full passage — words you've learned are highlighted.
+                        </p>
+                    </div>
+                    
+                    <div className={styles.titleDivider}></div>
 
-            <div className={styles.flowPassage}>
-                {paragraphs.map((para, idx) => (
-                    <p key={idx} className={styles.flowParagraph}>
-                        {renderWithHighlights(para)}
-                    </p>
-                ))}
-            </div>
+                    <div className={styles.passage}>
+                        {paragraphs.map((para, idx) => (
+                            <p key={idx} className={styles.flowParagraph}>
+                                {renderWithHighlights(para)}
+                            </p>
+                        ))}
+                    </div>
+                </div>
 
-            <button className="btn btn-primary btn-large" onClick={onComplete}>
-                Complete Chunk ✓
-            </button>
+                {/* 1:1 Complete CTA (oPlal / 95vgd) */}
+                <button className={styles.completeCta} onClick={onComplete}>
+                    Complete Chunk ✓
+                </button>
+            </div>
         </div>
     );
 }
@@ -642,7 +699,7 @@ function Step4FlowPractice({ chunk, words = [], onComplete }) {
 /**
  * Helper: Add Button with Feedback
  */
-function AddButton({ onClick, isBusy = false, isAdded = false }) {
+function AddButton({ onClick, isBusy = false, isAdded = false, className = '' }) {
     const [justAdded, setJustAdded] = useState(false);
     const [isPressing, setIsPressing] = useState(false);
     const skipClickRef = useRef(false);
@@ -710,7 +767,7 @@ function AddButton({ onClick, isBusy = false, isAdded = false }) {
 
     return (
         <button
-            className={`btn ${showAdded ? 'btn-success' : 'btn-primary'}`}
+            className={`btn ${showAdded ? 'btn-success' : 'btn-primary'} ${className}`}
             onPointerDown={handlePointerDown}
             onClick={handleClick}
             disabled={disabled}
