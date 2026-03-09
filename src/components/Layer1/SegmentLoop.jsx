@@ -146,7 +146,14 @@ export default function SegmentLoop({
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
-                return <Step1MacroContext chunk={chunk} isBilingual={isBilingual} onComplete={() => onStepComplete(1)} />;
+                return (
+                    <Step1MacroContext
+                        chunk={chunk}
+                        isBilingual={isBilingual}
+                        onComplete={() => onStepComplete(1)}
+                        onExploreMap={onBack}
+                    />
+                );
             case 2:
                 return (
                     <Step2VocabularyBuild
@@ -246,7 +253,7 @@ export default function SegmentLoop({
 /**
  * Step 1: Macro Context - Summary overview
  */
-function Step1MacroContext({ chunk, isBilingual, onComplete }) {
+function Step1MacroContext({ chunk, isBilingual, onComplete, onExploreMap }) {
     return (
         <div className={styles.macroBody}>
             {/* Left Column: Primary Summary */}
@@ -260,7 +267,7 @@ function Step1MacroContext({ chunk, isBilingual, onComplete }) {
                 <div className={styles.macroSpacer} />
 
                 <div className={styles.macroCtaRow}>
-                    <button className={`btn btn-secondary btn-large ${styles.actionBtn}`} onClick={() => window.history.back()}>
+                    <button className={`btn btn-secondary btn-large ${styles.actionBtn}`} onClick={onExploreMap}>
                         Explore Map
                     </button>
                     <button className={`btn btn-primary btn-large ${styles.actionBtn}`} onClick={onComplete}>
