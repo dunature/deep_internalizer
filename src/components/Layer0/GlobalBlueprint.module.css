@@ -6,11 +6,9 @@
     background: #f8fafc;
 }
 
-.darkTheme.container,
-@media (prefers-color-scheme: dark) {
-    .container {
-        background: #0B1220 !important;
-    }
+:global(.darkTheme).container,
+:global(.darkTheme) .container {
+    background: #0B1220 !important;
 }
 
 .empty {
@@ -31,12 +29,10 @@
     padding: 0 32px;
 }
 
-.darkTheme .topNav,
-@media (prefers-color-scheme: dark) {
-    .topNav {
-        background: #0B1220 !important;
-        border-bottom-color: #1F2937 !important;
-    }
+:global(.darkTheme).topNav,
+:global(.darkTheme) .topNav {
+    background: #0B1220 !important;
+    border-bottom-color: #1F2937 !important;
 }
 
 .navInner {
@@ -58,8 +54,7 @@
     color: #64748B;
 }
 
-.darkTheme .crumb,
-@media (prefers-color-scheme: dark) { .crumb { color: #D5DDE8 !important; } }
+:global(.darkTheme) .crumb { color: #D5DDE8 !important; }
 
 .back {
     font-size: 12px;
@@ -72,8 +67,7 @@
     text-align: left;
 }
 
-.darkTheme .back,
-@media (prefers-color-scheme: dark) { .back { color: #60A5FA !important; } }
+:global(.darkTheme) .back { color: #60A5FA !important; }
 
 .navTitle {
     font-size: 16px;
@@ -82,8 +76,7 @@
     text-align: center;
 }
 
-.darkTheme .navTitle,
-@media (prefers-color-scheme: dark) { .navTitle { color: #E2E8F0 !important; } }
+:global(.darkTheme) .navTitle { color: #E2E8F0 !important; }
 
 .navRight {
     display: flex;
@@ -108,23 +101,31 @@
     justify-content: center;
 }
 
-.darkTheme .importBtn,
-.darkTheme .profileBtn,
-.darkTheme .themeToggle,
-@media (prefers-color-scheme: dark) {
-    .importBtn, .profileBtn, .themeToggle {
-        background: #0F172A !important;
-        border-color: #1F2937 !important;
-        color: #E2E8F0 !important;
-    }
+:global(.darkTheme) .importBtn,
+:global(.darkTheme) .profileBtn,
+:global(.darkTheme) .themeToggle {
+    background: #0F172A !important;
+    border-color: #1F2937 !important;
+    color: #E2E8F0 !important;
 }
 
 .themeToggle {
     color: #334155;
 }
 
-.darkTheme .themeToggle,
-@media (prefers-color-scheme: dark) { .themeToggle { color: #D5DDE8 !important; } }
+.themeToggle.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+:global(.darkTheme) .themeToggle.active {
+    background: #4F7DBA !important;
+    border-color: #4F7DBA !important;
+    color: #FFFFFF !important;
+}
+
+:global(.darkTheme) .themeToggle { color: #D5DDE8 !important; }
 
 /* 1:1 Body Layout (mCf2J / wvnpc) */
 .body {
@@ -156,12 +157,9 @@
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
-.darkTheme .mapCard,
-@media (prefers-color-scheme: dark) {
-    .mapCard {
-        background: linear-gradient(180deg, #182338 0%, #121B2B 100%) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
-    }
+:global(.darkTheme) .mapCard {
+    background: linear-gradient(180deg, #182338 0%, #121B2B 100%) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
 }
 
 .mapHead {
@@ -177,8 +175,7 @@
     color: #0B1220;
 }
 
-.darkTheme .mapTitle,
-@media (prefers-color-scheme: dark) { .mapTitle { color: #F8FAFC !important; } }
+:global(.darkTheme) .mapTitle { color: #F8FAFC !important; }
 
 .progressChip {
     height: 28px;
@@ -192,10 +189,7 @@
     color: #1D4ED8;
 }
 
-.darkTheme .progressChip,
-@media (prefers-color-scheme: dark) {
-    .progressChip { background: #1E3A8A !important; color: #93C5FD !important; }
-}
+:global(.darkTheme) .progressChip { background: #1E3A8A !important; color: #93C5FD !important; }
 
 .chunkRow {
     display: grid;
@@ -234,18 +228,17 @@
     font-weight: 600;
 }
 
-.darkTheme .chunkNode,
-@media (prefers-color-scheme: dark) {
-    .chunkNode {
-        background: #0F172A !important;
-        border-color: #334155 !important;
-    }
-    .chunkNode.inProgress {
-        background: #172554 !important;
-        border-color: #4F7DBA !important;
-    }
-    .chunkText { color: #D5DDE8 !important; }
+:global(.darkTheme) .chunkNode {
+    background: #0F172A !important;
+    border-color: #334155 !important;
 }
+
+:global(.darkTheme) .chunkNode.inProgress {
+    background: #172554 !important;
+    border-color: #4F7DBA !important;
+}
+
+:global(.darkTheme) .chunkText { color: #D5DDE8 !important; }
 
 .progressRail {
     display: flex;
@@ -259,8 +252,7 @@
     color: #64748B;
 }
 
-.darkTheme .railLbl,
-@media (prefers-color-scheme: dark) { .railLbl { color: #94A3B8 !important; } }
+:global(.darkTheme) .railLbl { color: #94A3B8 !important; }
 
 .railTrack {
     height: 10px;
@@ -269,8 +261,7 @@
     padding: 2px;
 }
 
-.darkTheme .railTrack,
-@media (prefers-color-scheme: dark) { .railTrack { background: #334155 !important; } }
+:global(.darkTheme) .railTrack { background: #334155 !important; }
 
 .railVal {
     height: 100%;
@@ -299,9 +290,9 @@
 .stNow { background: #EFF6FF; color: #1D4ED8; }
 .stQueued { background: #F1F5F9; color: #475569; }
 
-.darkTheme .stDone, @media (prefers-color-scheme: dark) { .stDone { background: #052E25 !important; color: #6EE7B7 !important; } }
-.darkTheme .stNow, @media (prefers-color-scheme: dark) { .stNow { background: #172554 !important; color: #93C5FD !important; } }
-.darkTheme .stQueued, @media (prefers-color-scheme: dark) { .stQueued { background: #1E293B !important; color: #94A3B8 !important; } }
+:global(.darkTheme) .stDone { background: #052E25 !important; color: #6EE7B7 !important; }
+:global(.darkTheme) .stNow { background: #172554 !important; color: #93C5FD !important; }
+:global(.darkTheme) .stQueued { background: #1E293B !important; color: #94A3B8 !important; }
 
 /* Side Column (58pTf / lkTTX) */
 .sideCol {
@@ -321,12 +312,9 @@
     gap: 12px;
 }
 
-.darkTheme .docCard,
-@media (prefers-color-scheme: dark) {
-    .docCard {
-        background: rgba(15, 23, 42, 0.8) !important;
-        border-color: #2A3A52 !important;
-    }
+:global(.darkTheme) .docCard {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border-color: #2A3A52 !important;
 }
 
 .docTitle {
@@ -335,8 +323,7 @@
     color: #0F172A;
 }
 
-.darkTheme .docTitle,
-@media (prefers-color-scheme: dark) { .docTitle { color: #E2E8F0 !important; } }
+:global(.darkTheme) .docTitle { color: #E2E8F0 !important; }
 
 .docName {
     font-size: 13px;
@@ -344,8 +331,7 @@
     color: #334155;
 }
 
-.darkTheme .docName,
-@media (prefers-color-scheme: dark) { .docName { color: #CBD5E1 !important; } }
+:global(.darkTheme) .docName { color: #CBD5E1 !important; }
 
 .docMeta {
     font-size: 11px;
@@ -353,8 +339,7 @@
     color: #64748B;
 }
 
-.darkTheme .docMeta,
-@media (prefers-color-scheme: dark) { .docMeta { color: #94A3B8 !important; } }
+:global(.darkTheme) .docMeta { color: #94A3B8 !important; }
 
 .actionRow {
     display: flex;
@@ -380,8 +365,7 @@
     border: none;
 }
 
-.darkTheme .newBtn,
-@media (prefers-color-scheme: dark) { .newBtn { background: #4F7DBA !important; } }
+:global(.darkTheme) .newBtn { background: #4F7DBA !important; }
 
 .importBtn2 {
     background: #FFFFFF;
@@ -389,10 +373,7 @@
     border: 1px solid #CBD5E1;
 }
 
-.darkTheme .importBtn2,
-@media (prefers-color-scheme: dark) {
-    .importBtn2 { background: #0F172A !important; border-color: #475569 !important; color: #E2E8F0 !important; }
-}
+:global(.darkTheme) .importBtn2 { background: #0F172A !important; border-color: #475569 !important; color: #E2E8F0 !important; }
 
 .profileCard {
     height: 64px;
@@ -405,12 +386,9 @@
     justify-content: space-between;
 }
 
-.darkTheme .profileCard,
-@media (prefers-color-scheme: dark) {
-    .profileCard {
-        background: #111C30 !important;
-        border-color: #334155 !important;
-    }
+:global(.darkTheme) .profileCard {
+    background: #111C30 !important;
+    border-color: #334155 !important;
 }
 
 .profileName {
@@ -419,8 +397,7 @@
     color: #0F172A;
 }
 
-.darkTheme .profileName,
-@media (prefers-color-scheme: dark) { .profileName { color: #E2E8F0 !important; } }
+:global(.darkTheme) .profileName { color: #E2E8F0 !important; }
 
 .profileOpen {
     font-size: 12px;
@@ -429,5 +406,4 @@
     cursor: pointer;
 }
 
-.darkTheme .profileOpen,
-@media (prefers-color-scheme: dark) { .profileOpen { color: #60A5FA !important; } }
+:global(.darkTheme) .profileOpen { color: #60A5FA !important; }

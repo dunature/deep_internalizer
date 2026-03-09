@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { GlobalBlueprint } from './components/Layer0';
 import { SegmentLoop } from './components/Layer1';
 import { VocabularyReview } from './components/Vocabulary';
-import { LaunchInterception, ImportModal, UserProfile, PWAPrompt, OfflineIndicator, ThemeToggle } from './components/common';
+import { LaunchInterception, ImportModal, UserProfile, PWAPrompt, OfflineIndicator } from './components/common';
 import { useAppStore } from './stores/appStore';
 import {
   db,
@@ -65,10 +65,11 @@ function App() {
     setCurrentStep,
     checkDebt,
     grantEmergencyAccess,
-    restoreSession
+    restoreSession,
+    theme
   } = useAppStore();
 
-  const [document, setDocument] = useState(null);
+  const [currentDocument, setCurrentDocumentState] = useState(null);
   const [chunks, setChunks] = useState([]);
   const [chunkWords, setChunkWords] = useState([]);
   const [pendingWords, setPendingWords] = useState([]);
@@ -77,6 +78,15 @@ function App() {
   const [processingStep, setProcessingStep] = useState('');
   const [processingMeta, setProcessingMeta] = useState(null);
   const [currentView, setCurrentView] = useState(VIEW.EMPTY);
+
+  // Synchronize global theme with document body
+  useEffect(() => {
+    if (theme === 'dark') {
+      globalThis.document.body.classList.add('darkTheme');
+    } else {
+      globalThis.document.body.classList.remove('darkTheme');
+    }
+  }, [theme]);
 
 
   // Async operation guard: prevents stale callbacks from updating state
@@ -260,7 +270,7 @@ function App() {
   const loadDocument = async (docId) => {
     const doc = await getDocumentWithChunks(docId);
     if (doc) {
-      setDocument(doc);
+      setCurrentDocumentState(doc);
       setChunks(doc.chunks || []);
     }
   };
@@ -575,7 +585,7 @@ function App() {
   // Handle emergency access
   const handleEmergencyAccess = () => {
     if (grantEmergencyAccess()) {
-      setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
+      setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
     }
   };
 
@@ -719,7 +729,7 @@ function App() {
     await checkDebt();
     // After a review session, allow users to return to their previously active view
     // (either the Map or the Empty state)
-    setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
+    setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
   };
 
   // Render based on current view
@@ -736,21 +746,23 @@ function App() {
 
     case VIEW.REVIEW:
       return (
-        <VocabularyReview
-          words={pendingWords}
-          onKeep={handleKeepWord}
-          onArchive={handleArchiveWord}
-          onComplete={handleReviewComplete}
-          onBack={() => {
-            cancelPendingOperations();
-            setCurrentView(VIEW.INTERCEPTION);
-          }}
-        />
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
+          <VocabularyReview
+            words={pendingWords}
+            onKeep={handleKeepWord}
+            onArchive={handleArchiveWord}
+            onComplete={handleReviewComplete}
+            onBack={() => {
+              cancelPendingOperations();
+              setCurrentView(VIEW.INTERCEPTION);
+            }}
+          />
+        </div>
       );
 
     case VIEW.EMPTY:
       return (
-        <div className="empty-state">
+        <div className={`empty-state ${theme === 'dark' ? 'darkTheme' : ''}`}>
           <div className="empty-content">
             <h1>Deep Internalizer</h1>
             <p>Transform reading into deep learning</p>
@@ -779,7 +791,7 @@ function App() {
 
     case VIEW.LAYER1:
       return (
-        <div className="app">
+        <div className={`app ${theme === 'dark' ? 'darkTheme' : ''}`}>
           {/* Header is now handled inside SegmentLoop to align with Pencil design */}
           <main className="main-content">
             <SegmentLoop
@@ -797,18 +809,20 @@ function App() {
 
     case VIEW.PROFILE:
       return (
-        <UserProfile
-          onBack={() => {
-            cancelPendingOperations();
-            setCurrentView(document ? VIEW.LAYER0 : VIEW.EMPTY);
-          }}
-        />
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
+          <UserProfile
+            onBack={() => {
+              cancelPendingOperations();
+              setCurrentView(currentDocument ? VIEW.LAYER0 : VIEW.EMPTY);
+            }}
+          />
+        </div>
       );
 
     case VIEW.LAYER0:
     default:
       return (
-        <>
+        <div className={theme === 'dark' ? 'darkTheme' : ''}>
           <div className="app">
             {/* Header is now handled inside GlobalBlueprint to align with Pencil design */}
             <main className="main-content">
@@ -819,7 +833,7 @@ function App() {
                 </div>
               ) : (
                 <GlobalBlueprint
-                  document={document}
+                  document={currentDocument}
                   chunks={chunks}
                   currentChunkIndex={currentChunkIndex}
                   onChunkSelect={handleChunkSelect}
@@ -842,7 +856,7 @@ function App() {
           />
           <PWAPrompt />
           <OfflineIndicator />
-        </>
+        </div>
       );
   }
 }

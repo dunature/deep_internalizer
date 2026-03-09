@@ -36,7 +36,7 @@ export default function GlobalBlueprint({
     }
 
     return (
-        <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`}>
+        <div className={`${styles.container} ${theme === 'dark' ? 'darkTheme' : ''}`}>
             {/* 1:1 Top Nav (MvLdU / embCk) */}
             <nav className={styles.topNav}>
                 <div className={styles.navInner}>
@@ -52,7 +52,12 @@ export default function GlobalBlueprint({
                     <div className={styles.navRight}>
                         <button className={styles.importBtn} onClick={onShowImport}>Import</button>
                         <button className={styles.profileBtn} onClick={onShowProfile}>Profile</button>
-                        <button className={styles.themeToggle} onClick={toggleTheme}>Theme</button>
+                        <button 
+                            className={`${styles.themeToggle} ${theme === 'dark' ? styles.active : ''}`} 
+                            onClick={toggleTheme}
+                        >
+                            Theme
+                        </button>
                     </div>
                 </div>
             </nav>

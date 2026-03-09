@@ -206,25 +206,35 @@ export default function SegmentLoop({
                 </div>
             </header>
 
-            {/* Step Tabs (Macro/Language) */}
-            {currentStep <= 2 && (
-                <div className={styles.stepTabsWrapper}>
-                    <div className={styles.stepTabs}>
-                        <button 
-                            className={`${styles.stepTab} ${currentStep === 1 ? styles.activeTab : ''}`}
-                            onClick={() => onStepSet?.(1)}
-                        >
-                            Step 1 · Macro Context
-                        </button>
-                        <button 
-                            className={`${styles.stepTab} ${currentStep === 2 ? styles.activeTab : ''}`}
-                            onClick={() => onStepSet?.(2)}
-                        >
-                            Step 2 · Baseline Language
-                        </button>
-                    </div>
+            {/* Step Tabs (All Phases) */}
+            <div className={styles.stepTabsWrapper}>
+                <div className={styles.stepTabs}>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 1 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(1)}
+                    >
+                        Step 1 · Macro Context
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 2 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(2)}
+                    >
+                        Step 2 · Baseline Language
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 3 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(3)}
+                    >
+                        Step 3 · Articulation Practice
+                    </button>
+                    <button 
+                        className={`${styles.stepTab} ${currentStep === 4 ? styles.activeTab : ''}`}
+                        onClick={() => onStepSet?.(4)}
+                    >
+                        Step 4 · Flow Practice
+                    </button>
                 </div>
-            )}
+            </div>
 
             {/* Step content */}
             <main className={`${styles.content} ${currentStep === 2 ? styles.contentStep2 : ''}`}>
@@ -402,14 +412,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
     // Show loading state while keywords are being fetched
     if (isLoadingWords) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>AI is analyzing text...</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-
-                {/* Skeleton Loading Cards */}
                 <div className={styles.skeletonContainer}>
                     <div className={styles.skeletonCard}>
                         <div className={styles.skeletonWord}></div>
@@ -417,10 +423,9 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
                         <div className={styles.skeletonDefinition}></div>
                     </div>
                 </div>
-
                 <div className={styles.loadingSpinner}>
                     <div className="spinner"></div>
-                    <p>🔍 Extracting key vocabulary<span className={styles.loadingDots}></span></p>
+                    <p>🔍 Extracting key vocabulary...</p>
                 </div>
             </div>
         );
@@ -428,13 +433,10 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (isDeferred) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>Preparing word cards...</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-
                 <div className={styles.skeletonContainer}>
                     <div className={styles.skeletonCard}>
                         <div className={styles.skeletonWord}></div>
@@ -448,14 +450,15 @@ function Step2VocabularyBuild({ words, isLoading: isLoadingWords, onWordAction, 
 
     if (!hasWords) {
         return (
-            <div className={`${styles.stepContent} ${styles.step2Content}`}>
-                <div className={`${styles.stepHeader} ${styles.step2Header}`}>
-                    <span className={styles.stepLabel}>Step 2</span>
-                    <h3>Vocabulary Build</h3>
-                    <p className={styles.stepDesc}>No key words extracted for this chunk</p>
+            <div className={styles.step2Body}>
+                <div className={styles.step2Header}>
+                    Step 2 · Vocabulary Build
                 </div>
-                <button className="btn btn-primary" onClick={onComplete}>
-                    Continue to next step →
+                <div className={styles.emptyCard}>
+                    <p className={styles.emptyText}>No key words extracted for this chunk.</p>
+                </div>
+                <button className={styles.completeCta} style={{ width: '700px' }} onClick={onComplete}>
+                    Continue to Articulation →
                 </button>
             </div>
         );

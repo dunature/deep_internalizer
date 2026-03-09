@@ -39,20 +39,20 @@
 }
 
 .mainWord {
-    font-size: 44px;
+    font-size: 50px;
     font-weight: 700;
     color: #0F172A;
     margin: 0;
 }
 
 :global(.darkTheme) .mainWord {
-    font-size: 34px;
+    font-size: 50px;
     color: #E2E8F0 !important;
 }
 
 @media (prefers-color-scheme: dark) {
     .mainWord {
-        font-size: 34px;
+        font-size: 50px;
         color: #E2E8F0 !important;
     }
 }

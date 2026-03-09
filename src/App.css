@@ -26,10 +26,9 @@
 
 .empty-content p {
   font-size: var(--text-xl);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-10);
-  font-style: italic;
 }
 
 /* App Layout */
